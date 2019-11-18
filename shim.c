@@ -2488,6 +2488,8 @@ uninstall_shim_protocols(void)
 EFI_STATUS
 shim_init(void)
 {
+	EFI_STATUS efi_status;
+
 	setup_verbosity();
 	dprint(L"%a", shim_version);
 
@@ -2508,8 +2510,12 @@ shim_init(void)
 	}
 
 	hook_exit(systab);
-	EFI_STATUS status = install_shim_protocols();
-	return status;
+
+	efi_status = install_shim_protocols();
+	if (EFI_ERROR(efi_status))
+		perror(L"install_shim_protocols() failed: %r\n", efi_status);
+
+	return efi_status;
 }
 
 void
@@ -2608,12 +2614,11 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 #endif /* defined(ENABLE_SHIM_CERT) */
 
 	CHAR16 *msgs[] = {
-		L"import_mok_state() failed\n",
-		L"shim_int() failed\n",
+		L"import_mok_state() failed",
+		L"shim_init() failed",
 		NULL
 	};
 	int msg = 0;
-
 
 	/*
 	 * Set up the shim lock protocol so that grub and MokManager can
