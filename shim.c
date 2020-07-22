@@ -443,7 +443,7 @@ static CHECK_STATUS check_db_cert_in_ram(EFI_SIGNATURE_LIST *CertList,
 					}
 				}
 			} else if (verbose) {
-				console_notify(L"Not a DER encoding x.509 Certificate");
+				console_print(L"Not a DER encoding x.509 Certificate");
 			}
 		}
 
@@ -1284,11 +1284,11 @@ static EFI_STATUS handle_image (void *data, unsigned int datasize,
 					   sha256hash, sha1hash);
 
 		if (EFI_ERROR(efi_status)) {
-			console_error(L"Verification failed", efi_status);
+			console_print(L"Verification failed", efi_status);
 			return efi_status;
 		} else {
 			if (verbose)
-				console_print(L"Verification succeeded\n");
+				perror(L"Verification succeeded\n");
 		}
 	}
 
