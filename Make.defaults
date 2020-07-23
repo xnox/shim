@@ -86,8 +86,11 @@ ifeq ($(ARCH),arm)
 endif
 
 CFLAGS		= -ggdb -O0 -fno-stack-protector -fno-strict-aliasing -fpic \
-		  -fshort-wchar -Wall -Wsign-compare -Werror -fno-builtin \
+		  -fshort-wchar -Wall -Wsign-compare -fno-builtin \
+		  -Werror=extra \
 		  -Werror=sign-compare -ffreestanding -std=gnu89 \
+		  -Wno-error=pointer-sign -Wno-pointer-sign \
+		  -Wno-unused-parameter \
 		  -I$(shell $(CC) $(ARCH_CFLAGS) -print-file-name=include) \
 		  "-DDEFAULT_LOADER=L\"$(DEFAULT_LOADER)\"" \
 		  "-DDEFAULT_LOADER_CHAR=\"$(DEFAULT_LOADER)\"" \
