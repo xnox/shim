@@ -34,6 +34,7 @@
  */
 
 #include "shim.h"
+#include "hexdump.h"
 #if defined(ENABLE_SHIM_CERT)
 #include "shim_cert.h"
 #endif /* defined(ENABLE_SHIM_CERT) */
@@ -373,12 +374,18 @@ static BOOLEAN verify_x509(UINT8 *Cert, UINTN CertSize)
 	 * and 64KB. For convenience, assume the number of value bytes
 	 * is 2, i.e. the second byte is 0x82.
 	 */
-	if (Cert[0] != 0x30 || Cert[1] != 0x82)
+	if (Cert[0] != 0x30 || Cert[1] != 0x82) {
+		dprint(L"cert[0:1] is [%02x%02x], should be [%02x%02x]\n",
+		       Cert[0], Cert[1], 0x30, 0x82);
 		return FALSE;
+	}
 
 	length = Cert[2]<<8 | Cert[3];
-	if (length != (CertSize - 4))
+	if (length != (CertSize - 4)) {
+		dprint(L"Cert length is %ld, expecting %ld\n",
+		       length, CertSize);
 		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -421,33 +428,46 @@ static CHECK_STATUS check_db_cert_in_ram(EFI_SIGNATURE_LIST *CertList,
 					 UINTN dbsize,
 					 WIN_CERTIFICATE_EFI_PKCS *data,
 					 UINT8 *hash, CHAR16 *dbname,
-					 EFI_GUID guid)
+					 EFI_GUID guid, bool trace)
 {
 	EFI_SIGNATURE_DATA *Cert;
 	UINTN CertSize;
 	BOOLEAN IsFound = FALSE;
+	int i = 0;
 
 	while ((dbsize > 0) && (dbsize >= CertList->SignatureListSize)) {
 		if (CompareGuid (&CertList->SignatureType, &EFI_CERT_TYPE_X509_GUID) == 0) {
 			Cert = (EFI_SIGNATURE_DATA *) ((UINT8 *) CertList + sizeof (EFI_SIGNATURE_LIST) + CertList->SignatureHeaderSize);
 			CertSize = CertList->SignatureSize - sizeof(EFI_GUID);
+			if (trace) {
+				dprint(L"trying to verify cert %d (%s)\n", i++, dbname);
+			}
 			if (verify_x509(Cert->SignatureData, CertSize)) {
 				if (verify_eku(Cert->SignatureData, CertSize)) {
+					drain_openssl_errors();
 					IsFound = AuthenticodeVerify (data->CertData,
 								      data->Hdr.dwLength - sizeof(data->Hdr),
 								      Cert->SignatureData,
 								      CertSize,
 								      hash, SHA256_DIGEST_SIZE);
 					if (IsFound) {
+						dprint(L"AuthenticodeVerify() succeeded: %d\n", IsFound);
 						tpm_measure_variable(dbname, guid, CertSize, Cert->SignatureData);
 						drain_openssl_errors();
 						return DATA_FOUND;
 					} else {
-						LogError(L"AuthenticodeVerify(): %d\n", IsFound);
+						dprint(L"AuthenticodeVerify() failed: %d\n", IsFound);
+						PrintErrors();
+						ClearErrors();
+						crypterr(EFI_NOT_FOUND);
 					}
 				}
 			} else if (verbose) {
-				console_print(L"Not a DER encoding x.509 Certificate");
+				dprint(L"verify_x509() failed\n");
+				PrintErrors();
+				ClearErrors();
+				crypterr(EFI_NOT_FOUND);
+				dhexdumpf(L"cert:", Cert->SignatureData, CertSize, 0);
 			}
 		}
 
@@ -459,7 +479,7 @@ static CHECK_STATUS check_db_cert_in_ram(EFI_SIGNATURE_LIST *CertList,
 }
 
 static CHECK_STATUS check_db_cert(CHAR16 *dbname, EFI_GUID guid,
-				  WIN_CERTIFICATE_EFI_PKCS *data, UINT8 *hash)
+				  WIN_CERTIFICATE_EFI_PKCS *data, UINT8 *hash, bool trace)
 {
 	CHECK_STATUS rc;
 	EFI_STATUS efi_status;
@@ -473,7 +493,7 @@ static CHECK_STATUS check_db_cert(CHAR16 *dbname, EFI_GUID guid,
 
 	CertList = (EFI_SIGNATURE_LIST *)db;
 
-	rc = check_db_cert_in_ram(CertList, dbsize, data, hash, dbname, guid);
+	rc = check_db_cert_in_ram(CertList, dbsize, data, hash, dbname, guid, trace);
 
 	FreePool(db);
 
@@ -572,7 +592,7 @@ static EFI_STATUS check_blacklist (WIN_CERTIFICATE_EFI_PKCS *cert,
 	}
 	if (cert &&
 	    check_db_cert_in_ram(dbx, vendor_deauthorized_size, cert, sha256hash, L"dbx",
-				 EFI_SECURE_BOOT_DB_GUID) == DATA_FOUND) {
+				 EFI_SECURE_BOOT_DB_GUID, false) == DATA_FOUND) {
 		LogError(L"cert sha256hash found in vendor dbx\n");
 		return EFI_SECURITY_VIOLATION;
 	}
@@ -588,7 +608,7 @@ static EFI_STATUS check_blacklist (WIN_CERTIFICATE_EFI_PKCS *cert,
 	}
 	if (cert &&
 	    check_db_cert(L"dbx", EFI_SECURE_BOOT_DB_GUID,
-			  cert, sha256hash) == DATA_FOUND) {
+			  cert, sha256hash, false) == DATA_FOUND) {
 		LogError(L"cert sha256hash found in system dbx\n");
 		return EFI_SECURITY_VIOLATION;
 	}
@@ -599,7 +619,7 @@ static EFI_STATUS check_blacklist (WIN_CERTIFICATE_EFI_PKCS *cert,
 	}
 	if (cert &&
 	    check_db_cert(L"MokListX", SHIM_LOCK_GUID,
-			  cert, sha256hash) == DATA_FOUND) {
+			  cert, sha256hash, false) == DATA_FOUND) {
 		LogError(L"cert sha256hash found in Mok dbx\n");
 		return EFI_SECURITY_VIOLATION;
 	}
@@ -636,13 +656,13 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		} else {
 			LogError(L"check_db_hash(db, sha1hash) != DATA_FOUND\n");
 		}
-		if (cert && check_db_cert(L"db", EFI_SECURE_BOOT_DB_GUID, cert, sha256hash)
+		if (cert && check_db_cert(L"db", EFI_SECURE_BOOT_DB_GUID, cert, sha256hash, true)
 					== DATA_FOUND) {
 			verification_method = VERIFIED_BY_CERT;
 			update_verification_method(VERIFIED_BY_CERT);
 			return EFI_SUCCESS;
-		} else {
-			LogError(L"check_db_cert(db, sha256hash) != DATA_FOUND\n");
+		} else if (cert) {
+			dprint(L"check_db_cert(db, sha256hash) != DATA_FOUND\n");
 		}
 	}
 
@@ -661,12 +681,12 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 	}
 	if (cert &&
 	    check_db_cert_in_ram(db, vendor_db_size,
-				 cert, sha256hash, L"db",
-				 EFI_SECURE_BOOT_DB_GUID) == DATA_FOUND) {
+				 cert, sha256hash, L"vendor_db",
+				 EFI_SECURE_BOOT_DB_GUID, true) == DATA_FOUND) {
 		verification_method = VERIFIED_BY_CERT;
 		update_verification_method(VERIFIED_BY_CERT);
 		return EFI_SUCCESS;
-	} else {
+	} else if (cert) {
 		LogError(L"check_db_cert(vendor_db, sha256hash) != DATA_FOUND\n");
 	}
 #endif
@@ -680,12 +700,12 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 	} else {
 		LogError(L"check_db_hash(MokList, sha256hash) != DATA_FOUND\n");
 	}
-	if (cert && check_db_cert(L"MokList", SHIM_LOCK_GUID, cert, sha256hash)
+	if (cert && check_db_cert(L"MokList", SHIM_LOCK_GUID, cert, sha256hash, true)
 			== DATA_FOUND) {
 		verification_method = VERIFIED_BY_CERT;
 		update_verification_method(VERIFIED_BY_CERT);
 		return EFI_SUCCESS;
-	} else {
+	} else if (cert) {
 		LogError(L"check_db_cert(MokList, sha256hash) != DATA_FOUND\n");
 	}
 
@@ -993,6 +1013,11 @@ static EFI_STATUS generate_hash (char *data, unsigned int datasize_in,
 		goto done;
 	}
 
+	dprint(L"sha1 authenticode hash:\n");
+	dhexdumpat(sha1hash, SHA1_DIGEST_SIZE, 0);
+	dprint(L"sha256 authenticode hash:\n");
+	dhexdumpat(sha256hash, SHA256_DIGEST_SIZE, 0);
+
 done:
 	if (SectionHeader)
 		FreePool(SectionHeader);
@@ -1072,9 +1097,17 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 	 * Check whether the binary is whitelisted in any of the firmware
 	 * databases
 	 */
-	efi_status = check_whitelist(cert, sha256hash, sha1hash);
+	drain_openssl_errors();
+	efi_status = check_whitelist(NULL, sha256hash, sha1hash);
 	if (EFI_ERROR(efi_status)) {
-		LogError(L"check_whitelist(): %r\n", efi_status);
+		dprint(L"check_whitelist: %r\n", efi_status);
+		if (efi_status != EFI_NOT_FOUND) {
+			dprint(L"check_whitelist(): %r\n", efi_status);
+			PrintErrors();
+			ClearErrors();
+			crypterr(efi_status);
+			return efi_status;
+		}
 	} else {
 		drain_openssl_errors();
 		return efi_status;
@@ -1692,6 +1725,9 @@ static EFI_STATUS load_image (EFI_LOADED_IMAGE *li, void **data,
 
 	device = li->DeviceHandle;
 
+	if (verbose) {
+		dprint(L"attempting to load %s\n", PathName);
+	}
 	/*
 	 * Open the device
 	 */
@@ -2653,6 +2689,10 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 	 */
 	InitializeLib(image_handle, systab);
 
+	dprint(L"vendor_authorized:0x%08lx vendor_authorized_size:%lu\n",
+		      __FILE__, __LINE__, __func__, vendor_authorized, vendor_authorized_size);
+	dprint(L"vendor_deauthorized:0x%08lx vendor_deauthorized_size:%lu\n",
+		      __FILE__, __LINE__, __func__, vendor_deauthorized, vendor_deauthorized_size);
 	init_openssl();
 
 	/*

@@ -4,6 +4,7 @@
 -DOPENSSL_SMALL_FOOTPRINT
 -DPEDANTIC
 -ggdb
+-DSYNTASTIC
 -O0
 -fno-stack-protector
 -fno-strict-aliasing

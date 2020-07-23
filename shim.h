@@ -1,6 +1,13 @@
 #ifndef SHIM_H_
 #define SHIM_H_
 
+#ifdef SYNTASTIC
+#ifndef GNU_EFI_USE_EXTERNAL_STDARG
+#define GNU_EFI_USE_EXTERNAL_STDARG
+#endif
+#define va_copy(d,s)
+#endif
+
 #if defined __GNUC__ && defined __GNUC_MINOR__
 # define GNUC_PREREQ(maj, min) \
         ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
