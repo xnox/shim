@@ -577,6 +577,7 @@ static EFI_STATUS check_blacklist (WIN_CERTIFICATE_EFI_PKCS *cert,
 				   UINT8 *sha256hash, UINT8 *sha1hash)
 {
 	EFI_SIGNATURE_LIST *dbx = (EFI_SIGNATURE_LIST *)vendor_deauthorized;
+	dprint(L"got here\n");
 
 	if (check_db_hash_in_ram(dbx, vendor_deauthorized_size, sha256hash,
 			SHA256_DIGEST_SIZE, EFI_CERT_SHA256_GUID, L"dbx",
@@ -584,6 +585,7 @@ static EFI_STATUS check_blacklist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		LogError(L"binary sha256hash found in vendor dbx\n");
 		return EFI_SECURITY_VIOLATION;
 	}
+	dprint(L"got here\n");
 	if (check_db_hash_in_ram(dbx, vendor_deauthorized_size, sha1hash,
 				 SHA1_DIGEST_SIZE, EFI_CERT_SHA1_GUID, L"dbx",
 				 EFI_SECURE_BOOT_DB_GUID) == DATA_FOUND) {
@@ -624,6 +626,7 @@ static EFI_STATUS check_blacklist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		return EFI_SECURITY_VIOLATION;
 	}
 
+		dprint(L"got here\n");
 	drain_openssl_errors();
 	return EFI_SUCCESS;
 }
@@ -641,6 +644,7 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 				   UINT8 *sha256hash, UINT8 *sha1hash)
 {
 	if (!ignore_db) {
+		dprint(L"got here\n");
 		if (check_db_hash(L"db", EFI_SECURE_BOOT_DB_GUID, sha256hash, SHA256_DIGEST_SIZE,
 					EFI_CERT_SHA256_GUID) == DATA_FOUND) {
 			update_verification_method(VERIFIED_BY_HASH);
@@ -648,6 +652,7 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		} else {
 			LogError(L"check_db_hash(db, sha256hash) != DATA_FOUND\n");
 		}
+		dprint(L"got here\n");
 		if (check_db_hash(L"db", EFI_SECURE_BOOT_DB_GUID, sha1hash, SHA1_DIGEST_SIZE,
 					EFI_CERT_SHA1_GUID) == DATA_FOUND) {
 			verification_method = VERIFIED_BY_HASH;
@@ -656,6 +661,7 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		} else {
 			LogError(L"check_db_hash(db, sha1hash) != DATA_FOUND\n");
 		}
+		dprint(L"got here\n");
 		if (cert && check_db_cert(L"db", EFI_SECURE_BOOT_DB_GUID, cert, sha256hash, true)
 					== DATA_FOUND) {
 			verification_method = VERIFIED_BY_CERT;
@@ -664,25 +670,31 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		} else if (cert) {
 			dprint(L"check_db_cert(db, sha256hash) != DATA_FOUND\n");
 		}
+		dprint(L"got here\n");
 	}
 
 #if defined(VENDOR_DB_FILE)
+		dprint(L"got here\n");
 	EFI_SIGNATURE_LIST *db = (EFI_SIGNATURE_LIST *)vendor_db;
 
+		dprint(L"got here\n");
 	if (check_db_hash_in_ram(db, vendor_db_size,
 				 sha256hash, SHA256_DIGEST_SIZE,
 				 EFI_CERT_SHA256_GUID, L"vendor_db",
 				 EFI_SECURE_BOOT_DB_GUID) == DATA_FOUND) {
 		verification_method = VERIFIED_BY_HASH;
 		update_verification_method(VERIFIED_BY_HASH);
+		dprint(L"got here\n");
 		return EFI_SUCCESS;
 	} else {
 		LogError(L"check_db_hash(vendor_db, sha256hash) != DATA_FOUND\n");
 	}
+		dprint(L"got here\n");
 	if (cert &&
 	    check_db_cert_in_ram(db, vendor_db_size,
 				 cert, sha256hash, L"vendor_db",
 				 EFI_SECURE_BOOT_DB_GUID, true) == DATA_FOUND) {
+		dprint(L"got here\n");
 		verification_method = VERIFIED_BY_CERT;
 		update_verification_method(VERIFIED_BY_CERT);
 		return EFI_SUCCESS;
@@ -690,18 +702,22 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		LogError(L"check_db_cert(vendor_db, sha256hash) != DATA_FOUND\n");
 	}
 #endif
+	dprint(L"got here\n");
 
 	if (check_db_hash(L"MokList", SHIM_LOCK_GUID, sha256hash,
 			  SHA256_DIGEST_SIZE, EFI_CERT_SHA256_GUID)
 				== DATA_FOUND) {
+		dprint(L"got here\n");
 		verification_method = VERIFIED_BY_HASH;
 		update_verification_method(VERIFIED_BY_HASH);
 		return EFI_SUCCESS;
 	} else {
 		LogError(L"check_db_hash(MokList, sha256hash) != DATA_FOUND\n");
 	}
+	dprint(L"got here\n");
 	if (cert && check_db_cert(L"MokList", SHIM_LOCK_GUID, cert, sha256hash, true)
 			== DATA_FOUND) {
+		dprint(L"got here\n");
 		verification_method = VERIFIED_BY_CERT;
 		update_verification_method(VERIFIED_BY_CERT);
 		return EFI_SUCCESS;
@@ -709,7 +725,9 @@ static EFI_STATUS check_whitelist (WIN_CERTIFICATE_EFI_PKCS *cert,
 		LogError(L"check_db_cert(MokList, sha256hash) != DATA_FOUND\n");
 	}
 
+	dprint(L"got here\n");
 	update_verification_method(VERIFIED_BY_NOTHING);
+	dprint(L"got here\n");
 	return EFI_NOT_FOUND;
 }
 
@@ -1067,10 +1085,12 @@ verify_one_signature(WIN_CERTIFICATE_EFI_PKCS *sig,
 	}
 
 	efi_status = EFI_NOT_FOUND;
+	dprint(L"got here\n");
 #if defined(ENABLE_SHIM_CERT)
 	/*
 	 * Check against the shim build key
 	 */
+	dprint(L"got here\n");
 	drain_openssl_errors();
 	if (build_cert && build_cert_size) {
 		dprint("verifying against shim cert\n");
@@ -1140,6 +1160,7 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 	size_t offset = 0;
 	unsigned int i = 0;
 
+	dprint(L"got here\n");
 	if (datasize < 0)
 		return EFI_INVALID_PARAMETER;
 
@@ -1150,6 +1171,7 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 	 */
 	drain_openssl_errors();
 
+	dprint(L"got here\n");
 	ret_efi_status = generate_hash(data, datasize, context, sha256hash, sha1hash);
 	if (EFI_ERROR(ret_efi_status)) {
 		dprint(L"generate_hash: %r\n", ret_efi_status);
@@ -1162,7 +1184,9 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 	/*
 	 * Ensure that the binary isn't blacklisted by hash
 	 */
+	dprint(L"got here\n");
 	drain_openssl_errors();
+	dprint(L"got here\n");
 	ret_efi_status = check_blacklist(NULL, sha256hash, sha1hash);
 	if (EFI_ERROR(ret_efi_status)) {
 		perror(L"Binary is blacklisted\n");
@@ -1172,13 +1196,16 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 		crypterr(ret_efi_status);
 		return ret_efi_status;
 	}
+	dprint(L"got here\n");
 
 	/*
 	 * Check whether the binary is whitelisted by hash in any of the
 	 * firmware databases
 	 */
 	drain_openssl_errors();
+	dprint(L"got here\n");
 	ret_efi_status = check_whitelist(NULL, sha256hash, sha1hash);
+	dprint(L"got here\n");
 	if (EFI_ERROR(ret_efi_status)) {
 		dprint(L"check_whitelist: %r\n", ret_efi_status);
 		if (ret_efi_status != EFI_NOT_FOUND) {
@@ -1189,20 +1216,25 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 		}
 	} else {
 		drain_openssl_errors();
+	dprint(L"got here\n");
 		return ret_efi_status;
 	}
+	dprint(L"got here\n");
 
 	if (context->SecDir->Size == 0) {
 		dprint(L"No signatures found\n");
 		return EFI_SECURITY_VIOLATION;
 	}
+	dprint(L"got here\n");
 
 	if (context->SecDir->Size >= size) {
 		perror(L"Certificate Database size is too large\n");
 		return EFI_INVALID_PARAMETER;
 	}
+	dprint(L"got here\n");
 
 	ret_efi_status = EFI_SECURITY_VIOLATION;
+	dprint(L"got here\n");
 	do {
 		WIN_CERTIFICATE_EFI_PKCS *sig = NULL;
 		size_t sz;
@@ -1212,6 +1244,7 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 		if (!sig)
 			break;
 
+	dprint(L"got here\n");
 		sz = offset + offsetof(WIN_CERTIFICATE_EFI_PKCS, Hdr.dwLength)
 		     + sizeof(sig->Hdr.dwLength);
 		if (sz > context->SecDir->Size) {
@@ -1219,38 +1252,47 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 			return EFI_INVALID_PARAMETER;
 		}
 
+	dprint(L"got here\n");
 		sz = sig->Hdr.dwLength;
 		if (sz > context->SecDir->Size - offset) {
 			perror(L"Certificate size is too large for secruity database");
 			return EFI_INVALID_PARAMETER;
 		}
 
+	dprint(L"got here\n");
 		if (sz < sizeof(sig->Hdr)) {
 			perror(L"Certificate size is too small for certificate data");
 			return EFI_INVALID_PARAMETER;
 		}
 
+	dprint(L"got here\n");
 		if (sig->Hdr.wCertificateType == WIN_CERT_TYPE_PKCS_SIGNED_DATA) {
 			EFI_STATUS efi_status;
 
 			dprint(L"Attempting to verify signature %d:\n", i++);
 			LogHexdump(sig, sz);
 
+	dprint(L"got here\n");
 			efi_status = verify_one_signature(sig, sha256hash, sha1hash);
 			if (efi_status == EFI_SECURITY_VIOLATION) {
 				ret_efi_status = efi_status;
 				break;
 			}
+	dprint(L"got here\n");
 			if (ret_efi_status != EFI_SUCCESS)
 				ret_efi_status = efi_status;
+	dprint(L"got here\n");
 		} else {
 			perror(L"Unsupported certificate type %x\n",
 				sig->Hdr.wCertificateType);
 			return EFI_INVALID_PARAMETER;
 		}
+	dprint(L"got here\n");
 		offset = ALIGN_VALUE(offset + sz, 8);
+	dprint(L"got here\n");
 	} while (offset < context->SecDir->Size);
 
+	dprint(L"got here\n");
 	if (ret_efi_status != EFI_SUCCESS) {
 		dprint(L"Binary is not whitelisted\n");
 		PrintErrors();
@@ -1258,7 +1300,9 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
 		crypterr(EFI_SECURITY_VIOLATION);
 		ret_efi_status = EFI_SECURITY_VIOLATION;
 	}
+	dprint(L"got here\n");
 	drain_openssl_errors();
+	dprint(L"got here\n");
 	return ret_efi_status;
 }
 
@@ -1418,7 +1462,9 @@ static EFI_STATUS handle_image (void *data, unsigned int datasize,
 	/*
 	 * The binary header contains relevant context and section pointers
 	 */
+	dprint(L"got here\n");
 	efi_status = read_header(data, datasize, &context);
+	dprint(L"got here\n");
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Failed to read header: %r\n", efi_status);
 		return efi_status;
@@ -1427,8 +1473,10 @@ static EFI_STATUS handle_image (void *data, unsigned int datasize,
 	/*
 	 * We only need to verify the binary if we're in secure mode
 	 */
+	dprint(L"got here\n");
 	efi_status = generate_hash(data, datasize, &context, sha256hash,
 				   sha1hash);
+	dprint(L"got here\n");
 	if (EFI_ERROR(efi_status))
 		return efi_status;
 
@@ -1436,16 +1484,21 @@ static EFI_STATUS handle_image (void *data, unsigned int datasize,
 #ifdef REQUIRE_TPM
 	efi_status =
 #endif
+	dprint(L"got here\n");
 	tpm_log_pe((EFI_PHYSICAL_ADDRESS)(UINTN)data, datasize, sha1hash, 4);
 #ifdef REQUIRE_TPM
 	if (efi_status != EFI_SUCCESS) {
+	dprint(L"got here\n");
 		return efi_status;
 	}
 #endif
+	dprint(L"got here\n");
 
 	if (secure_mode ()) {
+	dprint(L"got here\n");
 		efi_status = verify_buffer(data, datasize, &context,
 					   sha256hash, sha1hash);
+	dprint(L"got here\n");
 
 		if (EFI_ERROR(efi_status)) {
 			console_print(L"Verification failed", efi_status);
@@ -2020,6 +2073,7 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	 * We need to refer to the loaded image protocol on the running
 	 * binary in order to find our path
 	 */
+	dprint(L"got here\n");
 	efi_status = gBS->HandleProtocol(image_handle, &EFI_LOADED_IMAGE_GUID,
 					 (void **)&li);
 	if (EFI_ERROR(efi_status)) {
@@ -2030,6 +2084,7 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	/*
 	 * Build a new path from the existing one plus the executable name
 	 */
+	dprint(L"got here\n");
 	efi_status = generate_path_from_image_path(li, ImagePath, &PathName);
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Unable to generate path %s: %r\n", ImagePath,
@@ -2037,7 +2092,9 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 		goto done;
 	}
 
+	dprint(L"got here\n");
 	if (findNetboot(li->DeviceHandle)) {
+	dprint(L"got here\n");
 		efi_status = parseNetbootinfo(image_handle);
 		if (EFI_ERROR(efi_status)) {
 			perror(L"Netboot parsing failed: %r\n", efi_status);
@@ -2066,6 +2123,7 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 		datasize = sourcesize;
 #endif
 	} else {
+	dprint(L"got here\n");
 		/*
 		 * Read the new executable off disk
 		 */
@@ -2088,13 +2146,16 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	 * We need to modify the loaded image protocol entry before running
 	 * the new binary, so back it up
 	 */
+	dprint(L"got here\n");
 	CopyMem(&li_bak, li, sizeof(li_bak));
+	dprint(L"got here\n");
 
 	/*
 	 * Verify and, if appropriate, relocate and execute the executable
 	 */
 	efi_status = handle_image(data, datasize, li, &entry_point,
 				  &alloc_address, &alloc_pages);
+	dprint(L"got here\n");
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Failed to load image: %r\n", efi_status);
 		PrintErrors();
@@ -2108,12 +2169,15 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	/*
 	 * The binary is trusted and relocated. Run it
 	 */
+	dprint(L"got here\n");
 	efi_status = entry_point(image_handle, systab);
+	dprint(L"got here\n");
 
 	/*
 	 * Restore our original loaded image values
 	 */
 	CopyMem(li, &li_bak, sizeof(li_bak));
+	dprint(L"got here\n");
 done:
 	if (PathName)
 		FreePool(PathName);
@@ -2121,6 +2185,7 @@ done:
 	if (data)
 		FreePool(data);
 
+	dprint(L"got here\n");
 	return efi_status;
 }
 
@@ -2133,24 +2198,31 @@ EFI_STATUS init_grub(EFI_HANDLE image_handle)
 	EFI_STATUS efi_status;
 	int use_fb = should_use_fallback(image_handle);
 
+	dprint(L"got here\n");
 	efi_status = start_image(image_handle, use_fb ? FALLBACK :second_stage);
+	dprint(L"got here\n");
 	if (efi_status == EFI_SECURITY_VIOLATION ||
 	    efi_status == EFI_ACCESS_DENIED) {
+	dprint(L"got here\n");
 		efi_status = start_image(image_handle, MOK_MANAGER);
+	dprint(L"got here\n");
 		if (EFI_ERROR(efi_status)) {
 			console_print(L"start_image() returned %r\n", efi_status);
 			msleep(2000000);
 			return efi_status;
 		}
+	dprint(L"got here\n");
 
 		efi_status = start_image(image_handle,
 					 use_fb ? FALLBACK : second_stage);
+	dprint(L"got here\n");
 	}
 
 	if (EFI_ERROR(efi_status)) {
 		console_print(L"start_image() returned %r\n", efi_status);
 		msleep(2000000);
 	}
+	dprint(L"got here\n");
 
 	return efi_status;
 }
@@ -2644,13 +2716,17 @@ shim_init(void)
 
 	/* Set the second stage loader */
 	efi_status = set_second_stage(global_image_handle);
+	dprint(L"got here\n");
 	if (EFI_ERROR(efi_status)) {
 		perror(L"set_second_stage() failed: %r\n", efi_status);
 		return efi_status;
 	}
+	dprint(L"got here\n");
 
 	if (secure_mode()) {
+	dprint(L"got here\n");
 		if (vendor_authorized_size || vendor_deauthorized_size) {
+	dprint(L"got here\n");
 			/*
 			 * If shim includes its own certificates then ensure
 			 * that anything it boots has performed some
@@ -2658,16 +2734,21 @@ shim_init(void)
 			 */
 			hook_system_services(systab);
 			loader_is_participating = 0;
+	dprint(L"got here\n");
 		}
+	dprint(L"got here\n");
 
 	}
+	dprint(L"got here\n");
 
 	hook_exit(systab);
 
+	dprint(L"got here\n");
 	efi_status = install_shim_protocols();
 	if (EFI_ERROR(efi_status))
 		perror(L"install_shim_protocols() failed: %r\n", efi_status);
 
+	dprint(L"got here\n");
 	return efi_status;
 }
 
