@@ -1,3 +1,9 @@
+shim (15+1552672080.a4a1fbe-0ubuntu3) UNRELEASED; urgency=medium
+
+  * debian/rules: add request to sign shim with archive signing key.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 03 Aug 2020 16:26:38 +0100
+
 shim (15+1552672080.a4a1fbe-0ubuntu2) focal; urgency=medium
 
   * d/patches/fix-path-checks.patch: Cherry-pick upstream fix for regression

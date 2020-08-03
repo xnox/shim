@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+include /usr/share/dpkg/default.mk
+
 # Other vendors, add your certs here.  No sense in using
 # dpkg-vendor --derives-from, because only Canonical-generated binaries will
 # be signed with this key; so if you are building your own shim binary you
@@ -46,3 +48,14 @@ override_dh_auto_install:
 override_dh_fixperms:
 	dh_fixperms
 	chmod a-x debian/shim/usr/lib/shim/shim$(EFI_ARCH).efi
+
+signing=debian/shim-$(DEB_VERSION)-signing/
+signingv=$(signing)/$(DEB_VERSION)
+signing_tar=$(DEB_SOURCE)_$(DEB_VERSION)_$(DEB_HOST_ARCH).tar.gz
+override_dh_builddeb:
+	dh_builddeb
+	mkdir -p $(signingv)/control
+	echo 'tarball' >$(signingv)/control/options
+	cp debian/shim/usr/lib/shim/shim*.efi $(signingv)/
+	tar -C $(signing) -czvf $(CURDIR)/../$(signing_tar) .
+	dpkg-distaddfile $(signing_tar) raw-signing -
