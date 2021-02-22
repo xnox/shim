@@ -1,6 +1,7 @@
 shim (15+1552672080.a4a1fbe-0ubuntu3) UNRELEASED; urgency=medium
 
   * debian/rules: add request to sign shim with archive signing key.
+  * debian/rules: add canonical 2021 DBX.
 
  -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 03 Aug 2020 16:26:38 +0100
 

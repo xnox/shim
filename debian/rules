@@ -8,6 +8,7 @@ include /usr/share/dpkg/default.mk
 # should be building the other binaries also.
 ifeq ($(shell dpkg-vendor --is ubuntu && echo yes),yes)
 	cert=debian/canonical-uefi-ca.der
+	dbx=debian/canonical-2021.esl
 	distributor=ubuntu
 else
 	cert=debian/debian-uefi-ca.der
@@ -30,6 +31,7 @@ COMMON_OPTIONS = \
 	ENABLE_SHIM_CERT=1 \
 	ENABLE_SBSIGN=1 \
 	VENDOR_CERT_FILE=$(cert) \
+	VENDOR_DBX_FILE=$(dbx) \
 	EFIDIR=$(distributor) \
 	$(NULL)
 
