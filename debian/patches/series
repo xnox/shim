@@ -1,0 +1,4 @@
+0001-tpm-minor-cleanup-use-EV_IPL-not-0xd.patch
+0002-Document-struct-mok_state_variable-better.patch
+0003-SBAT-mirror-SBAT-to-SbatRT-and-extend-to-PCR7-log.patch
+0001-sbat-Don-t-assume-VirtualSize-SizeOfRawData.patch

@@ -1,0 +1,51 @@
+From 56b867637d14816ef2e9503c3ba21d90f8dd7941 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Thu, 18 Feb 2021 16:47:47 -0500
+Subject: [PATCH 1/3] tpm: minor cleanup: use EV_IPL not 0xd
+
+This does two things:
+- consolidates all our TPM event type #defines to one place
+- uses EV_IPL instead of hard-coding 0xd
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ include/tpm.h | 2 +-
+ tpm.c         | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/tpm.h b/include/tpm.h
+index d524587..cab1939 100644
+--- a/include/tpm.h
++++ b/include/tpm.h
+@@ -6,7 +6,6 @@
+ #include <efilib.h>
+ 
+ #define TPM_ALG_SHA 0x00000004
+-#define EV_IPL      0x0000000d
+ 
+ EFI_STATUS tpm_log_event(EFI_PHYSICAL_ADDRESS buf, UINTN size, UINT8 pcr,
+ 			 const CHAR8 *description);
+@@ -176,6 +175,7 @@ typedef struct efi_tpm2_protocol efi_tpm2_protocol_t;
+ 
+ typedef UINT32                     TCG_EVENTTYPE;
+ 
++#define EV_IPL                              0x0000000d
+ #define EV_EFI_EVENT_BASE                   ((TCG_EVENTTYPE) 0x80000000)
+ #define EV_EFI_VARIABLE_DRIVER_CONFIG       (EV_EFI_EVENT_BASE + 1)
+ #define EV_EFI_VARIABLE_BOOT                (EV_EFI_EVENT_BASE + 2)
+diff --git a/tpm.c b/tpm.c
+index 4b9d0d9..e1fcb8b 100644
+--- a/tpm.c
++++ b/tpm.c
+@@ -209,7 +209,7 @@ EFI_STATUS tpm_log_event(EFI_PHYSICAL_ADDRESS buf, UINTN size, UINT8 pcr,
+ 			 const CHAR8 *description)
+ {
+ 	return tpm_log_event_raw(buf, size, pcr, description,
+-				 strlen(description) + 1, 0xd, NULL);
++				 strlen(description) + 1, EV_IPL, NULL);
+ }
+ 
+ EFI_STATUS tpm_log_pe(EFI_PHYSICAL_ADDRESS buf, UINTN size,
+-- 
+2.30.0
+

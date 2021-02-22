@@ -1,0 +1,45 @@
+From 9b0eb6ce8dfee18a6ea9ebb0a87e09358d1e9aab Mon Sep 17 00:00:00 2001
+From: Chris Coulson <chris.coulson@canonical.com>
+Date: Sat, 20 Feb 2021 20:34:55 +0000
+Subject: [PATCH] sbat: Don't assume VirtualSize == SizeOfRawData
+
+The current code rejects the .sbat section if the VirtualSize and
+SizeOfRawData fields of the section header aren't the same, but this
+is too strict. The VirtualSize corresponds to the size of the SBAT
+metadata and isn't necessarily a multiple of the file alignment.
+The on-disk size (SizeOfRawData) is a multiple of the file alignment
+and is zero padded. Make sure that the on-disk size is at least as
+large as virtual size, and ignore the .sbat section if it isn't.
+
+This should fix https://github.com/rhboot/shim/issues/281.
+
+Signed-off-by: Chris Coulson <chris.coulson@canonical.com>
+---
+ pe.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/pe.c b/pe.c
+index d1c105e..8f16174 100644
+--- a/pe.c
++++ b/pe.c
+@@ -1043,10 +1043,14 @@ handle_image (void *data, unsigned int datasize,
+ 				return EFI_UNSUPPORTED;
+ 			}
+ 
+-			/* If it has nonzero size, and our bounds check made
+-			 * sense, sizes match, then we believe it's okay. */
++			/* The virtual size corresponds to the size of the SBAT
++			 * metadata and isn't necessarily a multiple of the file
++			 * alignment. The on-disk size is a multiple of the file
++			 * alignment and is zero padded. Make sure that the
++			 * on-disk size is at least as large as virtual size,
++			 * and ignore the section if it isn't. */
+ 			if (Section->SizeOfRawData &&
+-			    Section->SizeOfRawData == Section->Misc.VirtualSize &&
++			    Section->SizeOfRawData >= Section->Misc.VirtualSize &&
+ 			    base && end) {
+ 				SBATBase = base;
+ 				/* +1 because of size vs last byte location */
+-- 
+2.30.0
+
