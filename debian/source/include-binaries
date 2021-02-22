@@ -1,2 +1,3 @@
 debian/canonical-uefi-ca.der
+debian/canonical-2021.esl
 debian/debian-uefi-ca.der

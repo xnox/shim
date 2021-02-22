@@ -20,6 +20,7 @@ shim (15+1552672080.a4a1fbe-0ubuntu3) UNRELEASED; urgency=medium
   * Add vendor SBAT metadata to shim.
     - add debian/sbat.ubuntu.csv.in
     - update debian/rules
+  * Add vendor dbx esl to include-binaries
 
  -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 03 Aug 2020 16:26:38 +0100
 
