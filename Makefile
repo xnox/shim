@@ -33,17 +33,19 @@ CFLAGS += -DENABLE_SHIM_CERT
 else
 TARGETS += $(MMNAME) $(FBNAME)
 endif
-OBJS	= shim.o mok.o netboot.o cert.o replacements.o tpm.o version.o errlog.o
+OBJS	= shim.o mok.o netboot.o cert.o replacements.o tpm.o version.o errlog.o sbat.o sbat_data.o pe.o httpboot.o
 KEYS	= shim_cert.h ocsp.* ca.* shim.crt shim.csr shim.p12 shim.pem shim.key shim.cer
-ORIG_SOURCES	= shim.c mok.c netboot.c replacements.c tpm.c errlog.c shim.h version.h $(wildcard include/*.h)
-MOK_OBJS = MokManager.o PasswordCrypt.o crypt_blowfish.o
+ORIG_SOURCES	= shim.c mok.c netboot.c replacements.c tpm.c errlog.c sbat.c pe.c httpboot.c shim.h version.h $(wildcard include/*.h)
+MOK_OBJS = MokManager.o PasswordCrypt.o crypt_blowfish.o errlog.o sbat_data.o
 ORIG_MOK_SOURCES = MokManager.c PasswordCrypt.c crypt_blowfish.c shim.h $(wildcard include/*.h)
-FALLBACK_OBJS = fallback.o tpm.o errlog.o
+FALLBACK_OBJS = fallback.o tpm.o errlog.o sbat_data.o
 ORIG_FALLBACK_SRCS = fallback.c
+SBATPATH = data/sbat.csv
 
-ifneq ($(origin ENABLE_HTTPBOOT), undefined)
-	OBJS += httpboot.o
-	SOURCES += httpboot.c include/httpboot.h
+ifeq ($(SOURCE_DATE_EPOCH),)
+	UNAME=$(shell uname -s -m -p -i -o)
+else
+	UNAME=buildhost
 endif
 
 SOURCES = $(foreach source,$(ORIG_SOURCES),$(TOPDIR)/$(source)) version.c
@@ -66,7 +68,7 @@ shim_cert.h: shim.cer
 
 version.c : $(TOPDIR)/version.c.in
 	sed	-e "s,@@VERSION@@,$(VERSION)," \
-		-e "s,@@UNAME@@,$(shell uname -s -m -p -i -o)," \
+		-e "s,@@UNAME@@,$(UNAME)," \
 		-e "s,@@COMMIT@@,$(COMMIT_ID)," \
 		< $< > $@
 
@@ -83,6 +85,18 @@ shim.o: $(wildcard $(TOPDIR)/*.h)
 
 cert.o : $(TOPDIR)/cert.S
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+sbat.%.csv : data/sbat.%.csv
+	$(DOS2UNIX) $(D2UFLAGS) $< $@
+	tail -c1 $@ | read -r _ || echo >> $@ # ensure a trailing newline
+
+VENDOR_SBATS := $(foreach x,$(wildcard data/sbat.*.csv),$(notdir $(x)))
+
+sbat_data.o : | $(SBATPATH) $(VENDOR_SBATS)
+sbat_data.o : /dev/null
+	$(CC) $(CFLAGS) -x c -c -o $@ $<
+	$(OBJCOPY) --set-section-alignment '.sbat=512' --add-section .sbat=$(SBATPATH) $@
+	$(foreach vs,$(VENDOR_SBATS),$(call add-vendor-sbat,$(vs),$@))
 
 $(SHIMNAME) : $(SHIMSONAME)
 $(MMNAME) : $(MMSONAME)
@@ -192,8 +206,8 @@ endif
 	$(OBJCOPY) -D -j .text -j .sdata -j .data -j .data.ident \
 		-j .dynamic -j .dynsym -j .rel* \
 		-j .rela* -j .reloc -j .eh_frame \
-		-j .vendor_cert \
-		$(FORMAT) $^ $@
+		-j .vendor_cert -j .sbat \
+		$(FORMAT) $< $@
 	# I am tired of wasting my time fighting binutils timestamp code.
 	dd conv=notrunc bs=1 count=4 seek=$(TIMESTAMP_LOCATION) if=/dev/zero of=$@
 
@@ -208,15 +222,18 @@ ifneq ($(OBJCOPY_GTE224),1)
 endif
 	$(OBJCOPY) -D -j .text -j .sdata -j .data \
 		-j .dynamic -j .dynsym -j .rel* \
-		-j .rela* -j .reloc -j .eh_frame \
+		-j .rela* -j .reloc -j .eh_frame -j .sbat \
 		-j .debug_info -j .debug_abbrev -j .debug_aranges \
 		-j .debug_line -j .debug_str -j .debug_ranges \
 		-j .note.gnu.build-id \
-		$^ $@
+		$< $@
 
 ifneq ($(origin ENABLE_SBSIGN),undefined)
 %.efi.signed: %.efi shim.key shim.crt
-	$(SBSIGN) --key shim.key --cert shim.crt --output $@ $<
+	@$(SBSIGN) \
+		--key shim.key \
+		--cert shim.crt \
+		--output $@ $<
 else
 %.efi.signed: %.efi certdb/secmod.db
 	$(PESIGN) -n certdb -i $< -c "shim" -s -o $@ -f
@@ -262,4 +279,4 @@ archive: tag
 
 .PHONY : install-deps shim.key
 
-export ARCH CC LD OBJCOPY EFI_INCLUDE
+export ARCH CC LD OBJCOPY EFI_INCLUDE OPTIMIZATIONS

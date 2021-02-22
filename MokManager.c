@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 #include <efi.h>
 #include <efilib.h>
 #include <stdarg.h>
@@ -8,6 +10,8 @@
 #include <openssl/bn.h>
 
 #include "shim.h"
+
+#include "hexdump.h"
 
 #define PASSWORD_MAX 256
 #define PASSWORD_MIN 1
@@ -21,6 +25,8 @@
 
 #define CERT_STRING L"Select an X509 certificate to enroll:\n\n"
 #define HASH_STRING L"Select a file to trust:\n\n"
+
+#define CompareMemberGuid(x, y) CompareMem(x, y, sizeof(EFI_GUID))
 
 typedef struct {
 	UINT32 MokSize;
@@ -352,14 +358,14 @@ static void show_x509_info(X509 * X509Cert, UINT8 * hash)
 			fields++;
 	}
 
-	time = X509_getm_notBefore(X509Cert);
+	time = X509_get_notBefore(X509Cert);
 	if (time) {
 		from = get_x509_time(time);
 		if (from)
 			fields++;
 	}
 
-	time = X509_getm_notAfter(X509Cert);
+	time = X509_get_notAfter(X509Cert);
 	if (time) {
 		until = get_x509_time(time);
 		if (until)
@@ -1024,9 +1030,11 @@ static EFI_STATUS mok_reset_prompt(BOOLEAN MokX)
 	if (MokX) {
 		LibDeleteVariable(L"MokXNew", &SHIM_LOCK_GUID);
 		LibDeleteVariable(L"MokXAuth", &SHIM_LOCK_GUID);
+		LibDeleteVariable(L"MokListX", &SHIM_LOCK_GUID);
 	} else {
 		LibDeleteVariable(L"MokNew", &SHIM_LOCK_GUID);
 		LibDeleteVariable(L"MokAuth", &SHIM_LOCK_GUID);
+		LibDeleteVariable(L"MokList", &SHIM_LOCK_GUID);
 	}
 
 	return EFI_SUCCESS;
@@ -1038,6 +1046,7 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 	EFI_STATUS efi_status;
 	EFI_SIGNATURE_LIST *CertList;
 	EFI_SIGNATURE_DATA *CertData;
+	EFI_GUID type;
 	void *Data = NULL, *ptr;
 	INTN DataSize = 0;
 	int i;
@@ -1048,18 +1057,29 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 	else
 		db_name = L"MokList";
 
+	dprint(L"Writing back %s (%d entries)\n", db_name, key_num);
 	for (i = 0; i < key_num; i++) {
 		if (list[i].Mok == NULL)
 			continue;
 
 		DataSize += sizeof(EFI_SIGNATURE_LIST);
-		if (CompareGuid(&(list[i].Type), &X509_GUID) == 0)
+		type = list[i].Type; /* avoid -Werror=address-of-packed-member */
+		if (CompareGuid(&type, &X509_GUID) == 0)
 			DataSize += sizeof(EFI_GUID);
 		DataSize += list[i].MokSize;
 	}
+	if (DataSize == 0) {
+		dprint(L"DataSize = 0; deleting variable %s\n", db_name);
+		efi_status = gRT->SetVariable(db_name, &SHIM_LOCK_GUID,
+					      EFI_VARIABLE_NON_VOLATILE |
+					      EFI_VARIABLE_BOOTSERVICE_ACCESS,
+					      DataSize, Data);
+		dprint(L"efi_status:%llu\n", efi_status);
+		return EFI_SUCCESS;
+	}
 
 	Data = AllocatePool(DataSize);
-	if (Data == NULL && DataSize != 0)
+	if (Data == NULL)
 		return EFI_OUT_OF_RESOURCES;
 
 	ptr = Data;
@@ -1075,7 +1095,7 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 		CertList->SignatureType = list[i].Type;
 		CertList->SignatureHeaderSize = 0;
 
-		if (CompareGuid(&(list[i].Type), &X509_GUID) == 0) {
+		if (CompareGuid(&(CertList->SignatureType), &X509_GUID) == 0) {
 			CertList->SignatureListSize = list[i].MokSize +
 			    sizeof(EFI_SIGNATURE_LIST) + sizeof(EFI_GUID);
 			CertList->SignatureSize =
@@ -1113,10 +1133,12 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 static void delete_cert(void *key, UINT32 key_size,
 			MokListNode * mok, INTN mok_num)
 {
+	EFI_GUID type;
 	int i;
 
 	for (i = 0; i < mok_num; i++) {
-		if (CompareGuid(&(mok[i].Type), &X509_GUID) != 0)
+		type = mok[i].Type; /* avoid -Werror=address-of-packed-member */
+		if (CompareGuid(&type, &X509_GUID) != 0)
 			continue;
 
 		if (mok[i].MokSize == key_size &&
@@ -1158,6 +1180,7 @@ static void mem_move(void *dest, void *src, UINTN size)
 static void delete_hash_in_list(EFI_GUID Type, UINT8 * hash, UINT32 hash_size,
 				MokListNode * mok, INTN mok_num)
 {
+	EFI_GUID type;
 	UINT32 sig_size;
 	UINT32 list_num;
 	int i, del_ind;
@@ -1167,7 +1190,8 @@ static void delete_hash_in_list(EFI_GUID Type, UINT8 * hash, UINT32 hash_size,
 	sig_size = hash_size + sizeof(EFI_GUID);
 
 	for (i = 0; i < mok_num; i++) {
-		if ((CompareGuid(&(mok[i].Type), &Type) != 0) ||
+		type = mok[i].Type; /* avoid -Werror=address-of-packed-member */
+		if ((CompareGuid(&type, &Type) != 0) ||
 		    (mok[i].MokSize < sig_size))
 			continue;
 
@@ -1223,6 +1247,7 @@ static void delete_hash_list(EFI_GUID Type, void *hash_list, UINT32 list_size,
 static EFI_STATUS delete_keys(void *MokDel, UINTN MokDelSize, BOOLEAN MokX)
 {
 	EFI_STATUS efi_status;
+	EFI_GUID type;
 	CHAR16 *db_name;
 	CHAR16 *auth_name;
 	CHAR16 *err_strs[] = { NULL, NULL, NULL };
@@ -1256,11 +1281,15 @@ static EFI_STATUS delete_keys(void *MokDel, UINTN MokDelSize, BOOLEAN MokX)
 	}
 
 	if (auth_size == PASSWORD_CRYPT_SIZE) {
+		dprint(L"matching password with CRYPT");
 		efi_status = match_password((PASSWORD_CRYPT *) auth, NULL, 0,
 					    NULL, NULL);
+		dprint(L"match_password(0x%llx, NULL, 0, NULL, NULL) = %lu\n", auth, efi_status);
 	} else {
+		dprint(L"matching password as sha256sum");
 		efi_status =
 		    match_password(NULL, MokDel, MokDelSize, auth, NULL);
+		dprint(L"match_password(NULL, 0x%llx, %llu, 0x%llx, NULL) = %lu\n", MokDel, MokDelSize, auth, efi_status);
 	}
 	if (EFI_ERROR(efi_status))
 		return EFI_ACCESS_DENIED;
@@ -1330,11 +1359,17 @@ static EFI_STATUS delete_keys(void *MokDel, UINTN MokDelSize, BOOLEAN MokX)
 	}
 
 	/* Search and destroy */
+	dprint(L"deleting certs from %a\n", MokX ? "MokListX" : "MokList");
 	for (i = 0; i < del_num; i++) {
-		if (CompareGuid(&(del_key[i].Type), &X509_GUID) == 0) {
+		type = del_key[i].Type; /* avoid -Werror=address-of-packed-member */
+		if (CompareGuid(&type, &X509_GUID) == 0) {
+			dprint(L"deleting key %d (total %d):\n", i, mok_num);
+			dhexdumpat(del_key[i].Mok, del_key[i].MokSize, 0);
 			delete_cert(del_key[i].Mok, del_key[i].MokSize,
 				    mok, mok_num);
 		} else if (is_sha2_hash(del_key[i].Type)) {
+			dprint(L"deleting hash %d (total %d):\n", i, mok_num);
+			dhexdumpat(del_key[i].Mok, del_key[i].MokSize, 0);
 			delete_hash_list(del_key[i].Type, del_key[i].Mok,
 					 del_key[i].MokSize, mok, mok_num);
 		}
@@ -1397,7 +1432,7 @@ static CHAR16 get_password_charater(CHAR16 * prompt)
 	SIMPLE_TEXT_OUTPUT_MODE SavedMode;
 	EFI_STATUS efi_status;
 	CHAR16 *message[2];
-	CHAR16 character;
+	CHAR16 character = 0;
 	UINTN length;
 	UINT32 pw_length;
 
@@ -2489,7 +2524,10 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE * systab)
 
 	InitializeLib(image_handle, systab);
 
+	setup_verbosity();
 	setup_rand();
+
+	console_mode_handle();
 
 	efi_status = check_mok_request(image_handle);
 

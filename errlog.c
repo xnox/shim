@@ -1,17 +1,32 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
  * errlog.c
- * Copyright 2017 Peter Jones <pjones@redhat.com>
- *
- * Distributed under terms of the GPLv3 license.
+ * Copyright Peter Jones <pjones@redhat.com>
  */
 
 #include "shim.h"
+#include "hexdump.h"
 
 static CHAR16 **errs = NULL;
 static UINTN nerrs = 0;
 
 EFI_STATUS
-VLogError(const char *file, int line, const char *func, CHAR16 *fmt, va_list args)
+vdprint_(const CHAR16 *fmt, const char *file, int line, const char *func, va_list args)
+{
+	va_list args2;
+	EFI_STATUS efi_status = EFI_SUCCESS;
+
+	if (verbose) {
+		va_copy(args2, args);
+		console_print(L"%a:%d:%a() ", file, line, func);
+		efi_status = VPrint(fmt, args2);
+		va_end(args2);
+	}
+	return efi_status;
+}
+
+EFI_STATUS
+VLogError(const char *file, int line, const char *func, const CHAR16 *fmt, va_list args)
 {
 	va_list args2;
 	CHAR16 **newerrs;
@@ -38,7 +53,7 @@ VLogError(const char *file, int line, const char *func, CHAR16 *fmt, va_list arg
 }
 
 EFI_STATUS
-LogError_(const char *file, int line, const char *func, CHAR16 *fmt, ...)
+LogError_(const char *file, int line, const char *func, const CHAR16 *fmt, ...)
 {
 	va_list args;
 	EFI_STATUS efi_status;
@@ -48,6 +63,12 @@ LogError_(const char *file, int line, const char *func, CHAR16 *fmt, ...)
 	va_end(args);
 
 	return efi_status;
+}
+
+VOID
+LogHexdump_(const char *file, int line, const char *func, const void *data, size_t sz)
+{
+	hexdumpat(file, line, func, data, sz, 0);
 }
 
 VOID

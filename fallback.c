@@ -1,10 +1,7 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
- * Copyright 2012-2013 Red Hat, Inc.
- * All rights reserved.
- *
- * See "COPYING" for license terms.
- *
- * Author(s): Peter Jones <pjones@redhat.com>
+ * Copyright Red Hat, Inc.
+ * Copyright Peter Jones <pjones@redhat.com>
  */
 
 #include <efi.h>
@@ -56,14 +53,15 @@ get_fallback_verbose(void)
 		ret_;							\
 	})
 
-#define VerbosePrint(fmt, ...)						\
-	({	UINTN line_ = __LINE__;					\
-		UINTN ret_ = 0;						\
-		if (get_fallback_verbose()) {				\
-			console_print(L"%a:%d: ", __func__, line_);	\
-			ret_ = console_print((fmt), ##__VA_ARGS__);	\
-		}							\
-		ret_;							\
+#define VerbosePrint(fmt, ...)                                      \
+	({                                                          \
+		UINTN line_ = __LINE__ - 2;                         \
+		UINTN ret_ = 0;                                     \
+		if (get_fallback_verbose()) {                       \
+			console_print(L"%a:%d: ", __func__, line_); \
+			ret_ = console_print((fmt), ##__VA_ARGS__); \
+		}                                                   \
+		ret_;                                               \
 	})
 
 static EFI_STATUS
@@ -1044,7 +1042,7 @@ debug_hook(void)
 	UINT8 *data = NULL;
 	UINTN dataSize = 0;
 	EFI_STATUS efi_status;
-	volatile register int x = 0;
+	register volatile int x = 0;
 	extern char _etext, _edata;
 
 	efi_status = get_variable(L"SHIM_DEBUG", &data, &dataSize,
