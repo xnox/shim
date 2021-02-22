@@ -8,7 +8,7 @@ include /usr/share/dpkg/default.mk
 # should be building the other binaries also.
 ifeq ($(shell dpkg-vendor --is ubuntu && echo yes),yes)
 	cert=debian/canonical-uefi-ca.der
-	dbx=debian/canonical-2021.esl
+	dbx=debian/canonical-2021_$(DEB_HOST_ARCH).esl
 	distributor=ubuntu
 else
 	cert=debian/debian-uefi-ca.der
