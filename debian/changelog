@@ -29,6 +29,8 @@ shim (15+1613861442.888f5b5-0ubuntu1) UNRELEASED; urgency=medium
     - add 0001-sbat-Don-t-assume-VirtualSize-SizeOfRawData.patch
   * Backport "Fix two errant 'shim,0' outdated sbat cases"
     - add 0001-Fix-two-errant-shim-0-outdated-sbat-cases.patch
+  * Build-depend on dos2unix
+    - update debian/control
 
  -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 03 Aug 2020 16:26:38 +0100
 
