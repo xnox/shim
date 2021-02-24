@@ -35,16 +35,38 @@ COMMON_OPTIONS = \
 	$(NULL)
 
 %:
-	dh $@ --parallel
+	dh $@ --parallel --with buildinfo
 
 override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
 	rm -f data/sbat.$(distributor).csv
 
+SHIM:=$(notdir $(wildcard /usr/lib/shim/shim*.efi))
+MM:=$(notdir $(wildcard /usr/lib/shim/mm*.efi))
+FB:=$(notdir $(wildcard /usr/lib/shim/fb*.efi))
 override_dh_auto_build:
 	sed -e "s/@DEB_VERSION@/$(deb_version)/g" \
 		<debian/sbat.$(distributor).csv.in \
-		>data/sbat.$(distributor).csv; \
+		>data/sbat.$(distributor).csv
+ifneq (,$(filter pkg.shim.reproducible,$(DEB_BUILD_PROFILES)))
+	sbattach --detach $(MM).sig /usr/lib/shim/$(MM)
+	sbattach --detach $(FB).sig /usr/lib/shim/$(FB)
+	openssl pkcs7 -inform der -in $(MM).sig -print_certs -outform pem -out shim.crt
+	# For makefile dependencies
+	sed 's/^.PHONY : install-deps shim.key$$/.PHONY : install-deps/' -i Makefile
+	touch shim.key
+	dh_auto_build -- $(COMMON_OPTIONS) $(SHIM).debug $(MM).debug $(FB).debug $(SHIM) $(MM) $(FB)
+	cp $(MM) $(MM).signed
+	cp $(FB) $(FB).signed
+	sbattach --attach $(MM).sig $(MM).signed
+	sbattach --attach $(FB).sig $(FB).signed
+	rm -f $(MM).sig $(FB).sig
+	# Compare SHIM
+	cmp /usr/lib/shim/$(SHIM) $(SHIM)
+	# Verify MM & FB
+	sbverify --cert shim.crt $(MM).signed
+	sbverify --cert shim.crt $(FB).signed
+endif
 	dh_auto_build -- $(COMMON_OPTIONS)
 
 override_dh_auto_install:

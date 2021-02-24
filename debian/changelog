@@ -32,6 +32,10 @@ shim (15+1613861442.888f5b5-0ubuntu1) UNRELEASED; urgency=medium
   * Build-depend on dos2unix
     - update debian/control
 
+  [ Dimitri John Ledkov ]
+  * Update packaging to allow reproducible rebuilds based on previously
+    built signatures of fb.efi/mm.efi.
+
  -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 03 Aug 2020 16:26:38 +0100
 
 shim (15+1552672080.a4a1fbe-0ubuntu2) focal; urgency=medium

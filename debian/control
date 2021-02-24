@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Steve Langasek <vorlon@debian.org>
 Standards-Version: 3.9.8
-Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev, dos2unix
+Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev, dos2unix, shim <pkg.shim.reproducible>, dh-buildinfo
 Vcs-Git: https://git.launchpad.net/~ubuntu-core-dev/shim/+git/shim
 
 Package: shim
