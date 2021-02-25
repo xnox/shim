@@ -35,6 +35,9 @@ shim (15+1613861442.888f5b5-0ubuntu1) UNRELEASED; urgency=medium
   [ Dimitri John Ledkov ]
   * Update packaging to allow reproducible rebuilds based on previously
     built signatures of fb.efi/mm.efi.
+  * Add shim-dbg package, skip stripping files.
+  * Update watch file.
+  * Upgrade to debhelper 12.
 
  -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 03 Aug 2020 16:26:38 +0100
 

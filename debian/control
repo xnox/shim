@@ -3,8 +3,8 @@ Section: admin
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Steve Langasek <vorlon@debian.org>
-Standards-Version: 3.9.8
-Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev, dos2unix, shim <pkg.shim.reproducible>, dh-buildinfo
+Standards-Version: 4.5.0
+Build-Depends: debhelper-compat (= 12), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev, dos2unix, shim <pkg.shim.reproducible>, dh-buildinfo
 Vcs-Git: https://git.launchpad.net/~ubuntu-core-dev/shim/+git/shim
 
 Package: shim
@@ -17,3 +17,16 @@ Description: boot loader to chain-load signed boot loaders under Secure Boot
  against a built-in signature database.  Its purpose is to allow a small,
  infrequently-changing binary to be signed by the UEFI CA, while allowing
  an OS distributor to revision their main bootloader independently of the CA.
+
+Package: shim-dbg
+Architecture: amd64 arm64
+Section: debug
+Depends: ${shlibs:Depends}, ${misc:Depends}, shim (= ${binary:Version})
+Description: boot loader to chain-load signed boot loaders under Secure Boot (dbg symbols)
+ This package provides a minimalist boot loader which allows verifying
+ signatures of other UEFI binaries against either the Secure Boot DB/DBX or
+ against a built-in signature database.  Its purpose is to allow a small,
+ infrequently-changing binary to be signed by the UEFI CA, while allowing
+ an OS distributor to revision their main bootloader independently of the CA.
+ .
+ Debug symbols.

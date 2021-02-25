@@ -35,7 +35,7 @@ COMMON_OPTIONS = \
 	$(NULL)
 
 %:
-	dh $@ --parallel --with buildinfo
+	dh $@ --with buildinfo
 
 override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
@@ -71,6 +71,13 @@ endif
 
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/tmp -- $(COMMON_OPTIONS)
+	rm -rf debian/tmp/usr/src
+	rm -rf debian/tmp/boot/efi/EFI/BOOT/BOOT*.EFI
+
+override_dh_strip:
+override_dh_dwz:
+override_dh_shlibdeps:
+	dh_shlibdeps -X.efi
 
 override_dh_fixperms:
 	dh_fixperms
@@ -86,3 +93,7 @@ override_dh_builddeb:
 	cp debian/shim/usr/lib/shim/shim*.efi $(signingv)/
 	tar -C $(signing) -czvf $(CURDIR)/../$(signing_tar) .
 	dpkg-distaddfile $(signing_tar) raw-signing -
+
+override_dh_clean:
+	rm -rf debian/shim-*-signing/
+	dh_clean
