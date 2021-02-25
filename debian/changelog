@@ -11,7 +11,7 @@ shim (15+1614277843.6b742f2b7-0ubuntu1) UNRELEASED; urgency=medium
   * Update watch file, now uscan can generate new upstream tarballs.
   * Upgrade to debhelper 12.
 
-[ Chris Coulson ]
+  [ Chris Coulson ]
   * Drop patches that are fixed upstream:
     - debian/patches/Fix-OBJ_create-to-tolerate-a-NULL-sn-and-ln.patch
     - debian/patches/MokManager-avoid-unaligned.patch
