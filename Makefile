@@ -19,8 +19,9 @@ VPATH		= $(TOPDIR)
 
 include $(TOPDIR)/Make.defaults
 include $(TOPDIR)/Make.rules
-include $(TOPDIR)/Make.coverity
-include $(TOPDIR)/Make.scan-build
+include $(TOPDIR)/include/coverity.mk
+include $(TOPDIR)/include/scan-build.mk
+include $(TOPDIR)/include/fanalyzer.mk
 
 TARGETS	= $(SHIMNAME)
 TARGETS += $(SHIMNAME).debug $(MMNAME).debug $(FBNAME).debug
@@ -33,7 +34,7 @@ CFLAGS += -DENABLE_SHIM_CERT
 else
 TARGETS += $(MMNAME) $(FBNAME)
 endif
-OBJS	= shim.o mok.o netboot.o cert.o replacements.o tpm.o version.o errlog.o sbat.o sbat_data.o pe.o httpboot.o
+OBJS	= shim.o mok.o netboot.o cert.o replacements.o tpm.o version.o errlog.o sbat.o sbat_data.o pe.o httpboot.o csv.o
 KEYS	= shim_cert.h ocsp.* ca.* shim.crt shim.csr shim.p12 shim.pem shim.key shim.cer
 ORIG_SOURCES	= shim.c mok.c netboot.c replacements.c tpm.c errlog.c sbat.c pe.c httpboot.c shim.h version.h $(wildcard include/*.h)
 MOK_OBJS = MokManager.o PasswordCrypt.o crypt_blowfish.o errlog.o sbat_data.o
@@ -95,7 +96,7 @@ VENDOR_SBATS := $(foreach x,$(wildcard data/sbat.*.csv),$(notdir $(x)))
 sbat_data.o : | $(SBATPATH) $(VENDOR_SBATS)
 sbat_data.o : /dev/null
 	$(CC) $(CFLAGS) -x c -c -o $@ $<
-	$(OBJCOPY) --set-section-alignment '.sbat=512' --add-section .sbat=$(SBATPATH) $@
+	$(OBJCOPY) --add-section .sbat=$(SBATPATH) $@
 	$(foreach vs,$(VENDOR_SBATS),$(call add-vendor-sbat,$(vs),$@))
 
 $(SHIMNAME) : $(SHIMSONAME)
@@ -239,6 +240,17 @@ else
 	$(PESIGN) -n certdb -i $< -c "shim" -s -o $@ -f
 endif
 
+test :
+	@make -f include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" all
+
+$(patsubst %.c,%,$(wildcard test-*.c)) :
+	@make -f include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" $@
+
+.PHONY : $(patsubst %.c,%,$(wildcard test-*.c)) test
+
+clean-test-objs:
+	@make -f include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" clean
+
 clean-shim-objs:
 	$(MAKE) -C lib -f $(TOPDIR)/lib/Makefile clean
 	@rm -rvf $(TARGET) *.o $(SHIM_OBJS) $(MOK_OBJS) $(FALLBACK_OBJS) $(KEYS) certdb $(BOOTCSVNAME)
@@ -246,7 +258,7 @@ clean-shim-objs:
 	@rm -vf Cryptlib/*.[oa] Cryptlib/*/*.[oa]
 	@if [ -d .git ] ; then git clean -f -d -e 'Cryptlib/OpenSSL/*'; fi
 
-clean: clean-shim-objs
+clean: clean-shim-objs clean-test-objs
 	$(MAKE) -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile clean
 	$(MAKE) -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile clean
 

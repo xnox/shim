@@ -1,12 +1,17 @@
-shim (15+1613861442.888f5b5-0ubuntu1) UNRELEASED; urgency=medium
+shim (15+1614277843.6b742f2b7-0ubuntu1) UNRELEASED; urgency=medium
 
   [ Dimitri John Ledkov ]
   * debian/rules: add request to sign shim with archive signing key.
   * debian/rules: add canonical 2021 DBX.
-
-  [ Chris Coulson ]
-  * New upstream snapshot 15+1613861442.888f5b5.
+  * New upstream snapshot 15+1614277843.6b742f2b7
     - Update the commit hash in debian/rules
+  * Update packaging to allow reproducible rebuilds based on previously
+    built signatures of fb.efi/mm.efi.
+  * Add shim-dbg package, skip stripping files.
+  * Update watch file, now uscan can generate new upstream tarballs.
+  * Upgrade to debhelper 12.
+
+[ Chris Coulson ]
   * Drop patches that are fixed upstream:
     - debian/patches/Fix-OBJ_create-to-tolerate-a-NULL-sn-and-ln.patch
     - debian/patches/MokManager-avoid-unaligned.patch
@@ -21,25 +26,10 @@ shim (15+1613861442.888f5b5-0ubuntu1) UNRELEASED; urgency=medium
     - add debian/sbat.ubuntu.csv.in
     - update debian/rules
   * Add vendor dbx esl to include-binaries
-  * Backport "Implement variable mirroring and TPM logging for SBAT"
-    - add 0001-tpm-minor-cleanup-use-EV_IPL-not-0xd.patch
-    - add 0002-Document-struct-mok_state_variable-better.patch
-    - add 0003-SBAT-mirror-SBAT-to-SbatRT-and-extend-to-PCR7-log.patch
-  * Backport "sbat: Don't assume VirtualSize == SizeOfRawData"
-    - add 0001-sbat-Don-t-assume-VirtualSize-SizeOfRawData.patch
-  * Backport "Fix two errant 'shim,0' outdated sbat cases"
-    - add 0001-Fix-two-errant-shim-0-outdated-sbat-cases.patch
   * Build-depend on dos2unix
     - update debian/control
 
-  [ Dimitri John Ledkov ]
-  * Update packaging to allow reproducible rebuilds based on previously
-    built signatures of fb.efi/mm.efi.
-  * Add shim-dbg package, skip stripping files.
-  * Update watch file, now uscan can generate new upstream tarballs.
-  * Upgrade to debhelper 12.
-
- -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 03 Aug 2020 16:26:38 +0100
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Thu, 25 Feb 2021 19:30:08 +0000
 
 shim (15+1552672080.a4a1fbe-0ubuntu2) focal; urgency=medium
 
