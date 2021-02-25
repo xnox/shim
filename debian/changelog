@@ -1,4 +1,4 @@
-shim (15+1614277843.6b742f2b7-0ubuntu1) UNRELEASED; urgency=medium
+shim (15+1614277843.6b742f2b7-0ubuntu1~ppa1) focal; urgency=medium
 
   [ Dimitri John Ledkov ]
   * debian/rules: add request to sign shim with archive signing key.
