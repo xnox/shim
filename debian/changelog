@@ -1,4 +1,4 @@
-shim (15+1614277843.6b742f2b7-0ubuntu1~ppa1) focal; urgency=medium
+shim (15+1614277843.6b742f2b7-0ubuntu1~ppa2) focal; urgency=medium
 
   [ Dimitri John Ledkov ]
   * debian/rules: add request to sign shim with archive signing key.
@@ -10,6 +10,7 @@ shim (15+1614277843.6b742f2b7-0ubuntu1~ppa1) focal; urgency=medium
   * Add shim-dbg package, skip stripping files.
   * Update watch file, now uscan can generate new upstream tarballs.
   * Upgrade to debhelper 12.
+  * Cherry-pick patch to fix building with old gnu-efi.
 
   [ Chris Coulson ]
   * Drop patches that are fixed upstream:
