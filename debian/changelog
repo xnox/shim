@@ -1,16 +1,17 @@
-shim (15+1614277843.6b742f2b7-0ubuntu1~ppa2) focal; urgency=medium
+shim (15+1615474142.e02bb35-0ubuntu1~ppa1) focal; urgency=medium
 
   [ Dimitri John Ledkov ]
   * debian/rules: add request to sign shim with archive signing key.
   * debian/rules: add canonical 2021 DBX.
-  * New upstream snapshot 15+1614277843.6b742f2b7
+  * New upstream snapshot 15+1615474142.e02bb35a16
     - Update the commit hash in debian/rules
   * Update packaging to allow reproducible rebuilds based on previously
     built signatures of fb.efi/mm.efi.
   * Add shim-dbg package, skip stripping files.
   * Update watch file, now uscan can generate new upstream tarballs.
   * Upgrade to debhelper 12.
-  * Cherry-pick patch to fix building with old gnu-efi.
+  * Drop gnu-efi build-dep, now vendored upstream.
+  * Add debian/rules target to generate gnu-efi components.
 
   [ Chris Coulson ]
   * Drop patches that are fixed upstream:
