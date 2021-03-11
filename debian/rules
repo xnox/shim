@@ -31,6 +31,7 @@ COMMON_OPTIONS = \
 	VENDOR_CERT_FILE=$(cert) \
 	VENDOR_DBX_FILE=$(dbx) \
 	EFIDIR=$(distributor) \
+	DISABLE_EBS_PROTECTION=1 \
 	$(NULL)
 
 %:

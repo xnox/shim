@@ -12,6 +12,8 @@ shim (15+1615474142.e02bb35-0ubuntu1~ppa1) focal; urgency=medium
   * Upgrade to debhelper 12.
   * Drop gnu-efi build-dep, now vendored upstream.
   * Add debian/rules target to generate gnu-efi components.
+  * Build shim with DISABLE_EBS_PROTECTION=1 to allow chainloading shim to
+    shim, and shim to kernel.efi.
 
   [ Chris Coulson ]
   * Drop patches that are fixed upstream:
