@@ -134,9 +134,9 @@ static int fmtfp(char **, char **, size_t *, size_t *,
                  LDOUBLE, int, int, int);
 #endif
 static int doapr_outch(char **, char **, size_t *, size_t *, int);
-static int _dopr(char **sbuffer, char **buffer,
-                 size_t *maxlen, size_t *retlen, int *truncated,
-                 const char *format, va_list args);
+static int EFIAPI _dopr(char **sbuffer, char **buffer,
+			size_t *maxlen, size_t *retlen, int *truncated,
+			const char *format, va_list args);
 
 /* format read states */
 #define DP_S_DEFAULT    0
@@ -167,7 +167,7 @@ static int _dopr(char **sbuffer, char **buffer,
 #define char_to_int(p) (p - '0')
 #define OSSL_MAX(p,q) ((p >= q) ? p : q)
 
-static int
+static int EFIAPI
 _dopr(char **sbuffer,
       char **buffer,
       size_t *maxlen,
@@ -797,7 +797,7 @@ doapr_outch(char **sbuffer,
 
 /***************************************************************************/
 
-int BIO_printf(BIO *bio, const char *format, ...)
+int EFIAPI BIO_printf(BIO *bio, const char *format, ...)
 {
     va_list args;
     int ret;
@@ -810,7 +810,7 @@ int BIO_printf(BIO *bio, const char *format, ...)
     return (ret);
 }
 
-int BIO_vprintf(BIO *bio, const char *format, va_list args)
+int EFIAPI BIO_vprintf(BIO *bio, const char *format, va_list args)
 {
     int ret;
     size_t retlen;
@@ -845,7 +845,7 @@ int BIO_vprintf(BIO *bio, const char *format, va_list args)
  * closely related to BIO_printf, and we need *some* name prefix ... (XXX the
  * function should be renamed, but to what?)
  */
-int BIO_snprintf(char *buf, size_t n, const char *format, ...)
+int EFIAPI BIO_snprintf(char *buf, size_t n, const char *format, ...)
 {
     va_list args;
     int ret;
@@ -858,7 +858,7 @@ int BIO_snprintf(char *buf, size_t n, const char *format, ...)
     return (ret);
 }
 
-int BIO_vsnprintf(char *buf, size_t n, const char *format, va_list args)
+int EFIAPI BIO_vsnprintf(char *buf, size_t n, const char *format, va_list args)
 {
     size_t retlen;
     int truncated;

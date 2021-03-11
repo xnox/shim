@@ -16,9 +16,10 @@ override TOPDIR := $(shell pwd)
 endif
 override TOPDIR	:= $(abspath $(TOPDIR))
 VPATH		= $(TOPDIR)
+export TOPDIR
 
-include $(TOPDIR)/Make.defaults
 include $(TOPDIR)/Make.rules
+include $(TOPDIR)/Make.defaults
 include $(TOPDIR)/include/coverity.mk
 include $(TOPDIR)/include/scan-build.mk
 include $(TOPDIR)/include/fanalyzer.mk
@@ -53,7 +54,18 @@ SOURCES = $(foreach source,$(ORIG_SOURCES),$(TOPDIR)/$(source)) version.c
 MOK_SOURCES = $(foreach source,$(ORIG_MOK_SOURCES),$(TOPDIR)/$(source))
 FALLBACK_SRCS = $(foreach source,$(ORIG_FALLBACK_SRCS),$(TOPDIR)/$(source))
 
+ifneq ($(origin FALLBACK_VERBOSE), undefined)
+	CFLAGS += -DFALLBACK_VERBOSE
+endif
+
+ifneq ($(origin FALLBACK_VERBOSE_WAIT), undefined)
+	CFLAGS += -DFALLBACK_VERBOSE_WAIT=$(FALLBACK_VERBOSE_WAIT)
+endif
+
 all: $(TARGETS)
+
+update :
+	git submodule update --init --recursive
 
 shim.crt:
 	$(TOPDIR)/make-certs shim shim@xn--u4h.net all codesign 1.3.6.1.4.1.311.10.3.1 </dev/null
@@ -96,37 +108,50 @@ VENDOR_SBATS := $(foreach x,$(wildcard data/sbat.*.csv),$(notdir $(x)))
 sbat_data.o : | $(SBATPATH) $(VENDOR_SBATS)
 sbat_data.o : /dev/null
 	$(CC) $(CFLAGS) -x c -c -o $@ $<
-	$(OBJCOPY) --add-section .sbat=$(SBATPATH) $@
+	$(OBJCOPY) --add-section .sbat=$(SBATPATH) \
+		--set-section-flags .sbat=contents,alloc,load,readonly,data \
+		$@
 	$(foreach vs,$(VENDOR_SBATS),$(call add-vendor-sbat,$(vs),$@))
 
 $(SHIMNAME) : $(SHIMSONAME)
 $(MMNAME) : $(MMSONAME)
 $(FBNAME) : $(FBSONAME)
 
-$(SHIMSONAME): $(OBJS) Cryptlib/libcryptlib.a Cryptlib/OpenSSL/libopenssl.a lib/lib.a
-	$(LD) -o $@ $(LDFLAGS) $^ $(EFI_LIBS)
+LIBS = Cryptlib/libcryptlib.a \
+       Cryptlib/OpenSSL/libopenssl.a \
+       lib/lib.a \
+       gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a \
+       gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a
+
+$(SHIMSONAME): $(OBJS) $(LIBS)
+	$(LD) -o $@ $(LDFLAGS) $^ $(EFI_LIBS) lib/lib.a
 
 fallback.o: $(FALLBACK_SRCS)
 
-$(FBSONAME): $(FALLBACK_OBJS) Cryptlib/libcryptlib.a Cryptlib/OpenSSL/libopenssl.a lib/lib.a
-	$(LD) -o $@ $(LDFLAGS) $^ $(EFI_LIBS)
+$(FBSONAME): $(FALLBACK_OBJS) $(LIBS)
+	$(LD) -o $@ $(LDFLAGS) $^ $(EFI_LIBS) lib/lib.a
 
 MokManager.o: $(MOK_SOURCES)
 
-$(MMSONAME): $(MOK_OBJS) Cryptlib/libcryptlib.a Cryptlib/OpenSSL/libopenssl.a lib/lib.a
+$(MMSONAME): $(MOK_OBJS) $(LIBS)
 	$(LD) -o $@ $(LDFLAGS) $^ $(EFI_LIBS) lib/lib.a
+
+gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a:
+	$(MAKE) -C gnu-efi \
+		ARCH=$(ARCH_GNUEFI) TOPDIR=$(TOPDIR)/gnu-efi \
+		lib gnuefi inc
 
 Cryptlib/libcryptlib.a:
 	for i in Hash Hmac Cipher Rand Pk Pem SysCall; do mkdir -p Cryptlib/$$i; done
-	$(MAKE) VPATH=$(TOPDIR)/Cryptlib TOPDIR=$(TOPDIR)/Cryptlib -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile
+	$(MAKE) VPATH=$(TOPDIR)/Cryptlib -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile
 
 Cryptlib/OpenSSL/libopenssl.a:
 	for i in x509v3 x509 txt_db stack sha rsa rc4 rand pkcs7 pkcs12 pem ocsp objects modes md5 lhash kdf hmac evp err dso dh conf comp cmac buffer bn bio async/arch asn1 aes; do mkdir -p Cryptlib/OpenSSL/crypto/$$i; done
-	$(MAKE) VPATH=$(TOPDIR)/Cryptlib/OpenSSL TOPDIR=$(TOPDIR)/Cryptlib/OpenSSL -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile
+	$(MAKE) VPATH=$(TOPDIR)/Cryptlib/OpenSSL -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile
 
 lib/lib.a: | $(TOPDIR)/lib/Makefile $(wildcard $(TOPDIR)/include/*.[ch])
 	if [ ! -d lib ]; then mkdir lib ; fi
-	$(MAKE) VPATH=$(TOPDIR)/lib TOPDIR=$(TOPDIR) CFLAGS="$(CFLAGS)" -C lib -f $(TOPDIR)/lib/Makefile lib.a
+	$(MAKE) VPATH=$(TOPDIR)/lib -C lib -f $(TOPDIR)/lib/Makefile lib.a
 
 buildid : $(TOPDIR)/buildid.c
 	$(CC) -Og -g3 -Wall -Werror -Wextra -o $@ $< -lelf
@@ -251,6 +276,11 @@ $(patsubst %.c,%,$(wildcard test-*.c)) :
 clean-test-objs:
 	@make -f include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" clean
 
+clean-gnu-efi:
+	$(MAKE) -C gnu-efi \
+		ARCH=$(ARCH_GNUEFI) TOPDIR=$(TOPDIR)/gnu-efi \
+		clean
+
 clean-shim-objs:
 	$(MAKE) -C lib -f $(TOPDIR)/lib/Makefile clean
 	@rm -rvf $(TARGET) *.o $(SHIM_OBJS) $(MOK_OBJS) $(FALLBACK_OBJS) $(KEYS) certdb $(BOOTCSVNAME)
@@ -258,9 +288,13 @@ clean-shim-objs:
 	@rm -vf Cryptlib/*.[oa] Cryptlib/*/*.[oa]
 	@if [ -d .git ] ; then git clean -f -d -e 'Cryptlib/OpenSSL/*'; fi
 
-clean: clean-shim-objs clean-test-objs
-	$(MAKE) -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile clean
+clean-openssl-objs:
 	$(MAKE) -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile clean
+
+clean-cryptlib-objs:
+	$(MAKE) -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile clean
+
+clean: clean-shim-objs clean-test-objs clean-gnu-efi clean-openssl-objs clean-cryptlib-objs
 
 GITTAG = $(VERSION)
 
@@ -291,4 +325,5 @@ archive: tag
 
 .PHONY : install-deps shim.key
 
-export ARCH CC LD OBJCOPY EFI_INCLUDE OPTIMIZATIONS
+export ARCH CC LD OBJCOPY EFI_INCLUDE EFI_INCLUDES OPTIMIZATIONS
+export FEATUREFLAGS WARNFLAGS WERRFLAGS

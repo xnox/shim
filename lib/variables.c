@@ -10,9 +10,6 @@
  * Copyright (c) 2011 - 2012, Intel Corporation. All rights reserved.<BR>
  *
  */
-#include <efi.h>
-#include <efilib.h>
-
 #include "shim.h"
 
 EFI_STATUS
@@ -257,6 +254,43 @@ EFI_STATUS
 get_variable(const CHAR16 * const var, UINT8 **data, UINTN *len, EFI_GUID owner)
 {
 	return get_variable_attr(var, data, len, owner, NULL);
+}
+
+EFI_STATUS
+get_variable_size(const CHAR16 * const var, EFI_GUID owner, UINTN *lenp)
+{
+	UINTN len = 0;
+	EFI_STATUS efi_status;
+
+	efi_status = get_variable_attr(var, NULL, &len, owner, NULL);
+	if (EFI_ERROR(efi_status)) {
+		if (efi_status == EFI_BUFFER_TOO_SMALL) {
+			*lenp = len;
+			return EFI_SUCCESS;
+		} else if (efi_status == EFI_NOT_FOUND) {
+			*lenp = 0;
+			return EFI_SUCCESS;
+		}
+		return efi_status;
+	}
+	/*
+	 * who knows what this means, but...
+	 */
+	*lenp = len;
+	return efi_status;
+}
+
+EFI_STATUS
+set_variable(CHAR16 *var, EFI_GUID owner, UINT32 attributes,
+	     UINTN datasize, void *data)
+{
+	return gRT->SetVariable(var, &owner, attributes, datasize, data);
+}
+
+EFI_STATUS
+del_variable(CHAR16 *var, EFI_GUID owner)
+{
+	return set_variable(var, owner, 0, 0, "");
 }
 
 EFI_STATUS

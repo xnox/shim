@@ -18,7 +18,11 @@
 # define RETURNS_NONNULL
 #else
 # define NONNULL(first, args...) __attribute__((__nonnull__(first, ## args)))
+#if (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)))
 # define RETURNS_NONNULL __attribute__((__returns_nonnull__))
+#else
+# define RETURNS_NONNULL
+#endif
 #endif
 
 #ifndef UNUSED
@@ -178,6 +182,11 @@
 
 #define MIN(a, b) ({(a) < (b) ? (a) : (b);})
 #define MAX(a, b) ({(a) <= (b) ? (b) : (a);})
+
+/**
+ * Builtins that don't go in string.h
+ */
+#define unreachable() __builtin_unreachable()
 
 #endif /* !COMPILER_H_ */
 // vim:fenc=utf-8:tw=75:et

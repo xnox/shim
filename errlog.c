@@ -5,13 +5,13 @@
  */
 
 #include "shim.h"
-#include "hexdump.h"
 
 static CHAR16 **errs = NULL;
 static UINTN nerrs = 0;
 
-EFI_STATUS
-vdprint_(const CHAR16 *fmt, const char *file, int line, const char *func, va_list args)
+EFI_STATUS EFIAPI
+vdprint_(const CHAR16 *fmt, const char *file, int line, const char *func,
+         va_list args)
 {
 	va_list args2;
 	EFI_STATUS efi_status = EFI_SUCCESS;
@@ -25,8 +25,9 @@ vdprint_(const CHAR16 *fmt, const char *file, int line, const char *func, va_lis
 	return efi_status;
 }
 
-EFI_STATUS
-VLogError(const char *file, int line, const char *func, const CHAR16 *fmt, va_list args)
+EFI_STATUS EFIAPI
+VLogError(const char *file, int line, const char *func, const CHAR16 *fmt,
+          va_list args)
 {
 	va_list args2;
 	CHAR16 **newerrs;
@@ -52,7 +53,7 @@ VLogError(const char *file, int line, const char *func, const CHAR16 *fmt, va_li
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS
+EFI_STATUS EFIAPI
 LogError_(const char *file, int line, const char *func, const CHAR16 *fmt, ...)
 {
 	va_list args;

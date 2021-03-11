@@ -3,11 +3,6 @@
  * Copyright 2012 <James.Bottomley@HansenPartnership.com>
  * Copyright 2013 Red Hat Inc. <pjones@redhat.com>
  */
-#include <efi.h>
-#include <efilib.h>
-#include <stdarg.h>
-#include <stdbool.h>
-
 #include "shim.h"
 
 static UINT8 console_text_mode = 0;
@@ -88,7 +83,7 @@ VOID console_fini(VOID)
 		setup_console(0);
 }
 
-UINTN
+UINTN EFIAPI
 console_print(const CHAR16 *fmt, ...)
 {
 	va_list args;
@@ -104,7 +99,7 @@ console_print(const CHAR16 *fmt, ...)
 	return ret;
 }
 
-UINTN
+UINTN EFIAPI
 console_print_at(UINTN col, UINTN row, const CHAR16 *fmt, ...)
 {
 	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
@@ -572,7 +567,7 @@ console_mode_handle(VOID)
 /* Copy of gnu-efi-3.0 with the added secure boot strings */
 static struct {
     EFI_STATUS      Code;
-    WCHAR	    *Desc;
+    CHAR16	   *Desc;
 } error_table[] = {
 	{  EFI_SUCCESS,                L"Success"},
 	{  EFI_LOAD_ERROR,             L"Load Error"},
