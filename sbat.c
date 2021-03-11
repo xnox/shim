@@ -293,4 +293,68 @@ parse_sbat_var(list_t *entries)
 	return parse_sbat_var_data(entries, data, datasize+1);
 }
 
+EFI_STATUS
+set_sbat_uefi_variable(void)
+{
+	EFI_STATUS efi_status = EFI_SUCCESS;
+	UINT32 attributes = 0;
+
+	UINT8 *sbat = NULL;
+	UINTN sbatsize = 0;
+
+	efi_status = get_variable_attr(L"SBAT", &sbat, &sbatsize,
+				       SHIM_LOCK_GUID, &attributes);
+	/*
+	 * Always set the SBAT UEFI variable if it fails to read.
+	 *
+	 * Don't try to set the SBAT UEFI variable if attributes match and
+	 * the signature matches.
+	 */
+	if (EFI_ERROR(efi_status)) {
+		dprint(L"SBAT read failed %r\n", efi_status);
+	} else if ((attributes == UEFI_VAR_NV_BS ||
+	            attributes == UEFI_VAR_NV_BS_TIMEAUTH) &&
+	           sbatsize >= strlen(SBAT_VAR_SIG "1") &&
+	           strncmp((const char *)sbat, SBAT_VAR_SIG,
+	                   strlen(SBAT_VAR_SIG))) {
+		FreePool(sbat);
+		return EFI_SUCCESS;
+	} else {
+		FreePool(sbat);
+
+		/* delete previous variable */
+		efi_status = set_variable(L"SBAT", SHIM_LOCK_GUID, attributes, 0, "");
+		if (EFI_ERROR(efi_status)) {
+			dprint(L"SBAT variable delete failed %r\n", efi_status);
+			return efi_status;
+		}
+	}
+
+	/* set variable */
+	efi_status = set_variable(L"SBAT", SHIM_LOCK_GUID, UEFI_VAR_NV_BS,
+	                          sizeof(SBAT_VAR), SBAT_VAR);
+	if (EFI_ERROR(efi_status)) {
+		dprint(L"SBAT variable writing failed %r\n", efi_status);
+		return efi_status;
+	}
+
+	/* verify that the expected data is there */
+	efi_status = get_variable(L"SBAT", &sbat, &sbatsize, SHIM_LOCK_GUID);
+	if (EFI_ERROR(efi_status)) {
+		dprint(L"SBAT read failed %r\n", efi_status);
+		return efi_status;
+	}
+
+	if (sbatsize != strlen(SBAT_VAR) ||
+	    strncmp((const char *)sbat, SBAT_VAR, strlen(SBAT_VAR)) != 0) {
+		efi_status = EFI_INVALID_PARAMETER;
+	} else {
+		dprint(L"SBAT variable initialization succeeded\n");
+	}
+
+	FreePool(sbat);
+
+	return efi_status;
+}
+
 // vim:fenc=utf-8:tw=75:noet
