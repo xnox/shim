@@ -1388,7 +1388,7 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 	EFI_STATUS efi_status;
 	EFI_LOADED_IMAGE *li = NULL;
 	CHAR16 *start = NULL;
-	int remaining_size = 0;
+	UINTN remaining_size = 0;
 	CHAR16 *loader_str = NULL;
 	UINTN loader_len = 0;
 	unsigned int i;
@@ -1510,9 +1510,14 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 					   li->LoadOptionsSize);
 
 	/*
-	 * In the case where strings == 1 check to see if L' ' is being used as
-	 * a delimiter, if so replace it with NULLs since the code already
-	 * handles that case.
+	 * In some cases we get strings == 1 because BDS is using L' ' as the
+	 * delimeter:
+	 * 0000:74 00 65 00 73 00 74 00 2E 00 65 00 66 00 69 00 t.e.s.t...e.f.i.
+	 * 0016:20 00 6F 00 6E 00 65 00 20 00 74 00 77 00 6F 00 ..o.n.e...t.w.o.
+	 * 0032:20 00 74 00 68 00 72 00 65 00 65 00 00 00       ..t.h.r.e.e...
+	 *
+	 * If so replace it with NULs since the code already handles that
+	 * case.
 	 */
 	if (strings == 1) {
 		UINT16 *cur = li->LoadOptions;
@@ -1561,18 +1566,12 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 				break;
 			}
 		}
-		/* if we didn't find at least one NULL, something is wrong */
-		if (start == li->LoadOptions)
-			return EFI_SUCCESS;
 
-		while (start[loader_len++] != L'\0');
-		loader_len *= 2;
-
-		remaining_size -= loader_len;
+		remaining_size -= i * 2 + 2;
 	} else if (strings == 1 && is_our_path(li, start)) {
 		/*
-		* And then I found a version of BDS that gives us our own path
-		* in LoadOptions:
+		 * And then I found a version of BDS that gives us our own path
+		 * in LoadOptions:
 
 77162C58                           5c 00 45 00 46 00 49 00          |\.E.F.I.|
 77162C60  5c 00 42 00 4f 00 4f 00  54 00 5c 00 42 00 4f 00  |\.B.O.O.T.\.B.O.|
@@ -1846,6 +1845,35 @@ debug_hook(void)
 	x = 1;
 }
 
+typedef enum {
+	COLD_RESET,
+	EXIT_FAILURE,
+	EXIT_SUCCESS,	// keep this one last
+} devel_egress_action;
+
+void
+devel_egress(devel_egress_action action UNUSED)
+{
+#ifdef ENABLE_SHIM_DEVEL
+	char *reasons[] = {
+		[COLD_RESET] = "reset",
+		[EXIT_FAILURE] = "exit",
+	};
+	if (action == EXIT_SUCCESS)
+		return;
+
+	console_print(L"Waiting to %a...", reasons[action]);
+	for (size_t sleepcount = 0; sleepcount < 10; sleepcount++) {
+		console_print(L"%d...", 10 - sleepcount);
+		msleep(1000000);
+	}
+	console_print(L"\ndoing %a\n", action);
+
+	if (action == COLD_RESET)
+		gRT->ResetSystem(EfiResetCold, EFI_SECURITY_VIOLATION, 0, NULL);
+#endif
+}
+
 EFI_STATUS
 efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 {
@@ -1961,9 +1989,13 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 die:
 		console_print(L"Something has gone seriously wrong: %s: %r\n",
 			      msgs[msg], efi_status);
+#if defined(ENABLE_SHIM_DEVEL)
+		devel_egress(COLD_RESET);
+#else
 		msleep(5000000);
 		gRT->ResetSystem(EfiResetShutdown, EFI_SECURITY_VIOLATION,
 				 0, NULL);
+#endif
 	}
 
 	efi_status = shim_init();
@@ -1986,5 +2018,6 @@ die:
 	efi_status = init_grub(image_handle);
 
 	shim_fini();
+	devel_egress(EFI_ERROR(efi_status) ? EXIT_FAILURE : EXIT_SUCCESS);
 	return efi_status;
 }

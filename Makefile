@@ -29,6 +29,9 @@ TARGETS += $(SHIMNAME).debug $(MMNAME).debug $(FBNAME).debug
 ifneq ($(origin ENABLE_SHIM_HASH),undefined)
 TARGETS += $(SHIMHASHNAME)
 endif
+ifneq ($(origin ENABLE_SHIM_DEVEL),undefined)
+CFLAGS += -DENABLE_SHIM_DEVEL
+endif
 ifneq ($(origin ENABLE_SHIM_CERT),undefined)
 TARGETS	+= $(MMNAME).signed $(FBNAME).signed
 CFLAGS += -DENABLE_SHIM_CERT
@@ -136,6 +139,7 @@ MokManager.o: $(MOK_SOURCES)
 $(MMSONAME): $(MOK_OBJS) $(LIBS)
 	$(LD) -o $@ $(LDFLAGS) $^ $(EFI_LIBS) lib/lib.a
 
+gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a: CFLAGS+=-DGNU_EFI_USE_EXTERNAL_STDARG
 gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a:
 	$(MAKE) -C gnu-efi \
 		ARCH=$(ARCH_GNUEFI) TOPDIR=$(TOPDIR)/gnu-efi \
