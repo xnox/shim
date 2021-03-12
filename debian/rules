@@ -45,7 +45,7 @@ SHIM:=$(notdir $(wildcard /usr/lib/shim/shim*.efi))
 MM:=$(notdir $(wildcard /usr/lib/shim/mm*.efi))
 FB:=$(notdir $(wildcard /usr/lib/shim/fb*.efi))
 override_dh_auto_build:
-	sed -e "s/@DEB_VERSION@/$(deb_version)/g" \
+	sed -e "s/@DEB_VERSION@/$(DEB_VERSION)/g" \
 		<debian/sbat.$(distributor).csv.in \
 		>data/sbat.$(distributor).csv
 ifneq (,$(filter pkg.shim.reproducible,$(DEB_BUILD_PROFILES)))
