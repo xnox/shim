@@ -1,9 +1,9 @@
-shim (15+1615540501.39b96c0-0ubuntu1~ppa2) focal; urgency=medium
+shim (15+1615915397.6fa1c8e-0ubuntu1~ppa1) focal; urgency=medium
 
   [ Dimitri John Ledkov ]
   * debian/rules: add request to sign shim with archive signing key.
   * debian/rules: add canonical 2021 DBX.
-  * New upstream snapshot 15+1615474142.e02bb35a16
+  * New upstream snapshot
     - Update the commit hash in debian/rules
   * Update packaging to allow reproducible rebuilds based on previously
     built signatures of fb.efi/mm.efi.
