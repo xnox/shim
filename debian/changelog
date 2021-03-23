@@ -1,19 +1,18 @@
 shim (15+1616445843.f9294c2-0ubuntu1~ppa1) focal; urgency=medium
 
   [ Dimitri John Ledkov ]
-  * debian/rules: add request to sign shim with archive signing key.
+  * debian/rules: add request to sign EFI binaries with archive signing key.
+  * debian/rules: stop using ENABLE_SHIM_CERT=1.
   * debian/rules: add canonical 2021 DBX.
+  * deiban/rules: start using DISABLE_EBS_PROTECTION=1 to allow
+    chainloading shim to shim, and shim to kernel.efi.
   * New upstream snapshot
     - Update the commit hash in debian/rules
-  * Update packaging to allow reproducible rebuilds based on previously
-    built signatures of fb.efi/mm.efi.
   * Add shim-dbg package, skip stripping files.
   * Update watch file, now uscan can generate new upstream tarballs.
   * Upgrade to debhelper 12.
   * Drop gnu-efi build-dep, now vendored upstream.
   * Add debian/rules target to generate gnu-efi components.
-  * Build shim with DISABLE_EBS_PROTECTION=1 to allow chainloading shim to
-    shim, and shim to kernel.efi.
 
   [ Chris Coulson ]
   * Drop patches that are fixed upstream:

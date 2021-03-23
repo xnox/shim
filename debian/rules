@@ -26,8 +26,6 @@ COMMON_OPTIONS = \
 	RELEASE=15 \
 	COMMIT_ID=f9294c2fa9feaf5353c0b7a4a7ce102a820c1a3f \
 	MAKELEVEL=0 \
-	ENABLE_SHIM_CERT=1 \
-	ENABLE_SBSIGN=1 \
 	VENDOR_CERT_FILE=$(cert) \
 	VENDOR_DBX_FILE=$(dbx) \
 	EFIDIR=$(distributor) \
@@ -41,32 +39,10 @@ override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
 	rm -f data/sbat.$(distributor).csv sbat.$(distributor).csv
 
-SHIM:=$(notdir $(wildcard /usr/lib/shim/shim*.efi))
-MM:=$(notdir $(wildcard /usr/lib/shim/mm*.efi))
-FB:=$(notdir $(wildcard /usr/lib/shim/fb*.efi))
 override_dh_auto_build:
 	sed -e "s/@DEB_VERSION@/$(DEB_VERSION)/g" \
 		<debian/sbat.$(distributor).csv.in \
 		>data/sbat.$(distributor).csv
-ifneq (,$(filter pkg.shim.reproducible,$(DEB_BUILD_PROFILES)))
-	sbattach --detach $(MM).sig /usr/lib/shim/$(MM)
-	sbattach --detach $(FB).sig /usr/lib/shim/$(FB)
-	openssl pkcs7 -inform der -in $(MM).sig -print_certs -outform pem -out shim.crt
-	# For makefile dependencies
-	sed 's/^.PHONY : install-deps shim.key$$/.PHONY : install-deps/' -i Makefile
-	touch shim.key
-	dh_auto_build -- $(COMMON_OPTIONS) $(SHIM).debug $(MM).debug $(FB).debug $(SHIM) $(MM) $(FB)
-	cp $(MM) $(MM).signed
-	cp $(FB) $(FB).signed
-	sbattach --attach $(MM).sig $(MM).signed
-	sbattach --attach $(FB).sig $(FB).signed
-	rm -f $(MM).sig $(FB).sig
-	# Compare SHIM
-	cmp /usr/lib/shim/$(SHIM) $(SHIM)
-	# Verify MM & FB
-	sbverify --cert shim.crt $(MM).signed
-	sbverify --cert shim.crt $(FB).signed
-endif
 	dh_auto_build -- $(COMMON_OPTIONS)
 
 override_dh_auto_install:
@@ -83,10 +59,6 @@ override_dh_dwz:
 override_dh_shlibdeps:
 	dh_shlibdeps -X.efi
 
-override_dh_fixperms:
-	dh_fixperms
-	chmod a-x debian/shim/usr/lib/shim/shim$(EFI_ARCH).efi
-
 signing=debian/shim-$(DEB_VERSION)-signing/
 signingv=$(signing)/$(DEB_VERSION)
 signing_tar=$(DEB_SOURCE)_$(DEB_VERSION)_$(DEB_HOST_ARCH).tar.gz
@@ -94,7 +66,8 @@ override_dh_builddeb:
 	dh_builddeb
 	mkdir -p $(signingv)/control
 	echo 'tarball' >$(signingv)/control/options
-	cp debian/shim/usr/lib/shim/shim*.efi $(signingv)/
+	chmod a-x debian/tmp/boot/efi/EFI/$(distributor)/*.efi
+	cp debian/tmp/boot/efi/EFI/$(distributor)/*.efi $(signingv)/
 	tar -C $(signing) -czvf $(CURDIR)/../$(signing_tar) .
 	dpkg-distaddfile $(signing_tar) raw-signing -
 
