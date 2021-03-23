@@ -66,8 +66,9 @@ override_dh_builddeb:
 	dh_builddeb
 	mkdir -p $(signingv)/control
 	echo 'tarball' >$(signingv)/control/options
-	chmod a-x debian/tmp/boot/efi/EFI/$(distributor)/*.efi
+	chmod a-x debian/tmp/boot/efi/EFI/*/*.efi
 	cp debian/tmp/boot/efi/EFI/$(distributor)/*.efi $(signingv)/
+	cp debian/tmp/boot/efi/EFI/BOOT/*.efi $(signingv)/
 	tar -C $(signing) -czvf $(CURDIR)/../$(signing_tar) .
 	dpkg-distaddfile $(signing_tar) raw-signing -
 
