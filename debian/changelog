@@ -1,4 +1,4 @@
-shim (15+1616445843.f9294c2-0ubuntu1~ppa1) focal; urgency=medium
+shim (15.3-0ubuntu1~ppa1) focal; urgency=medium
 
   [ Dimitri John Ledkov ]
   * debian/rules: add request to sign EFI binaries with archive signing key.
