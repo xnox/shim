@@ -13,6 +13,7 @@ shim (15+1616445843.f9294c2-0ubuntu1~ppa1) focal; urgency=medium
   * Upgrade to debhelper 12.
   * Drop gnu-efi build-dep, now vendored upstream.
   * Add debian/rules target to generate gnu-efi components.
+  * Do not clean gnu-efi Makefile.orig
 
   [ Chris Coulson ]
   * Drop patches that are fixed upstream:

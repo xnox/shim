@@ -74,7 +74,7 @@ override_dh_builddeb:
 
 override_dh_clean:
 	rm -rf debian/shim-*-signing/
-	dh_clean
+	dh_clean -Xgnu-efi/lib/Makefile.orig
 
 generate-gnu-efi:
 	git -C gnu-efi archive --prefix=gnu-efi/ HEAD | xz -9 > ../shim_$(DEB_VERSION_UPSTREAM).orig-gnu-efi.tar.xz
