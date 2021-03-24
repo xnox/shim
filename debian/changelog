@@ -33,7 +33,7 @@ shim (15.3-0ubuntu1~ppa1) focal; urgency=medium
   * Build-depend on dos2unix
     - update debian/control
 
- -- Dimitri John Ledkov <xnox@ubuntu.com>  Thu, 25 Feb 2021 19:30:08 +0000
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 24 Mar 2021 11:32:25 +0000
 
 shim (15+1552672080.a4a1fbe-0ubuntu2) focal; urgency=medium
 
