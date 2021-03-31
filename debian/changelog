@@ -1,7 +1,7 @@
-shim (15.3-0ubuntu1) focal; urgency=medium
+shim (15.4-0ubuntu1) focal; urgency=medium
 
   [ Dimitri John Ledkov ]
-  * New upstream release 15.3 LP: #1921134
+  * New upstream release 15.4 LP: #1921134
     - Update the commit hash in debian/rules
   * debian/rules: add request to sign EFI binaries with archive signing key.
   * debian/rules: stop using ENABLE_SHIM_CERT=1.
