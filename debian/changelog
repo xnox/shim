@@ -14,6 +14,7 @@ shim (15.4-0ubuntu2) hirsute; urgency=medium
   * Drop gnu-efi build-dep, now vendored upstream.
   * Add debian/rules target to generate gnu-efi components.
   * Do not clean gnu-efi Makefile.orig
+  * Remove fallback 5s delay with TPM. LP: #1922581
 
   [ Chris Coulson ]
   * Drop patches that are fixed upstream:
