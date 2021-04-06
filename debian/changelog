@@ -15,6 +15,7 @@ shim (15.4-0ubuntu2) hirsute; urgency=medium
   * Add debian/rules target to generate gnu-efi components.
   * Do not clean gnu-efi Makefile.orig
   * Remove fallback 5s delay with TPM. LP: #1922581
+  * Add xxd build-dep to run unittests.
 
   [ Chris Coulson ]
   * Drop patches that are fixed upstream:

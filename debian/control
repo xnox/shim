@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Steve Langasek <vorlon@debian.org>
 Standards-Version: 4.5.0
-Build-Depends: debhelper-compat (= 12), libelf-dev, dos2unix, dh-buildinfo
+Build-Depends: debhelper-compat (= 12), libelf-dev, dos2unix, dh-buildinfo, xxd
 Vcs-Git: https://git.launchpad.net/~ubuntu-core-dev/shim/+git/shim
 
 Package: shim

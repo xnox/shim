@@ -51,10 +51,6 @@ override_dh_auto_install:
 	rm -rf debian/tmp/usr/src
 	rm -rf debian/tmp/boot/efi/EFI/BOOT/BOOT*.EFI
 
-override_dh_auto_test:
-	# fails to build
-	-dh_auto_test
-
 override_dh_strip:
 override_dh_dwz:
 override_dh_shlibdeps:
