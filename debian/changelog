@@ -1,4 +1,4 @@
-shim (15.4-0ubuntu2) hirsute; urgency=medium
+shim (15.4-0ubuntu1) hirsute; urgency=medium
 
   [ Dimitri John Ledkov ]
   * New upstream release 15.4 LP: #1921134
