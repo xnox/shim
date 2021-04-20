@@ -5,6 +5,7 @@ shim (15.4-0ubuntu2) UNRELEASED; urgency=medium
 
   [ Dimitri John Ledkov ]
   * Fix kernel warning when allocating MOK table (LP: #1925139)
+  * Fix booting with shim SBState disabled (LP: #1925140)
 
  -- Balint Reczey <rbalint@ubuntu.com>  Mon, 19 Apr 2021 15:52:50 +0200
 
