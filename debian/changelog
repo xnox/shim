@@ -1,6 +1,10 @@
 shim (15.4-0ubuntu2) UNRELEASED; urgency=medium
 
+  [ Balint Reczey ]
   * Fix boot on EFI 1.10 machines, for example on some MacBooks (LP: #1925010)
+
+  [ Dimitri John Ledkov ]
+  * Fix kernel warning when allocating MOK table (LP: #1925139)
 
  -- Balint Reczey <rbalint@ubuntu.com>  Mon, 19 Apr 2021 15:52:50 +0200
 
